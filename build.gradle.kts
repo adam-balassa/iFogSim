@@ -1,5 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
+val kotlinVersion = "1.7.21"
+
 plugins {
     kotlin("jvm") version "1.7.21"
 }
@@ -26,6 +28,7 @@ java {
 }
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
+    implementation("org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
     implementation(files("jars/json-simple-1.1.1.jar"))
     implementation(files("jars/commons-math3-3.5/commons-math3-3.5.jar"))
     implementation(files("jars/guava-18.0.jar"))
