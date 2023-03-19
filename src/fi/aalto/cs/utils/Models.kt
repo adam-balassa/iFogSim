@@ -21,3 +21,7 @@ enum class TupleDirection(val id: Int) {
 enum class AppEdgeType(val id: Int) {
     FromSensor(1), ToActuator(2), InterModule(3)
 }
+
+enum class MicroservicePlacementStrategy(val id: Int) {
+    ClusteredPlacement(2), DistributedPlacement(3)
+}

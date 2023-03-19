@@ -1,5 +1,6 @@
 package fi.aalto.cs.utils
 
+import fi.aalto.cs.utils.MicroservicePlacementStrategy.ClusteredPlacement
 import org.cloudbus.cloudsim.Pe
 import org.cloudbus.cloudsim.power.PowerHost
 import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple
@@ -12,12 +13,22 @@ import org.fog.application.selectivity.FractionalSelectivity
 import org.fog.application.selectivity.SelectivityModel
 import org.fog.entities.*
 import org.fog.mobilitydata.References.NOT_SET
+import org.fog.placement.MicroservicesMobilityClusteringController
 import org.fog.policy.AppModuleAllocationPolicy
 import org.fog.scheduler.StreamOperatorScheduler
 import org.fog.scheduler.TupleScheduler
 import org.fog.utils.FogLinearPowerModel
 import org.fog.utils.FogUtils.generateEntityId
 import org.fog.utils.distribution.Distribution
+import kotlin.Double
+import kotlin.Int
+import kotlin.Long
+import kotlin.Pair
+import kotlin.String
+import kotlin.also
+import kotlin.apply
+import kotlin.let
+import kotlin.to
 import org.apache.commons.math3.util.Pair as ApachePair
 
 fun forwarding(mapping: Pair<TupleType, TupleType>, probability: Double = 1.0) =
@@ -182,3 +193,28 @@ fun <T>Simulation<T>.actuator(
         it.app = app
     })
 }
+
+fun <T>Simulation<T>.placementRequest(
+    module: ModuleType,
+    sensor: Sensor
+) = PlacementRequest(
+    app.appId,
+    sensor.id,
+    sensor.gatewayDeviceId,
+    mutableMapOf(module.name to sensor.gatewayDeviceId)
+)
+
+fun <T>Simulation<T>.microservicesMobilityClusteringController(
+    clusterLevels: List<FogDeviceLevel>,
+    clusterLinkLatency: Int = 0,
+    placementStrategy: MicroservicePlacementStrategy = ClusteredPlacement
+) = MicroservicesMobilityClusteringController(
+    "controller",
+    environment.fogDevices.flatMap { it.value },
+    environment.sensors,
+    listOf(app),
+    clusterLevels.map { it.id },
+    clusterLinkLatency.toDouble(),
+    placementStrategy.id,
+    environment.locator,
+)
