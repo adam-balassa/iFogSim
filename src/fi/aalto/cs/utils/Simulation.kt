@@ -39,11 +39,11 @@ class Simulation<Config>(
 
 class SimulationEnvironment {
     val locator = LocationHandler(DataParser())
-    val fogDevices = mutableListOf<FogDevice>()
+    val fogDevices = mutableMapOf("generic" to mutableListOf<FogDevice>())
     val sensors = mutableListOf<Sensor>()
     val actuators = mutableListOf<Actuator>()
 
-    fun add(device: FogDevice) = fogDevices.add(device)
+    fun add(device: FogDevice) = fogDevices["generic"]?.add(device)
     fun add(actuator: Actuator) = actuators.add(actuator)
     fun add(sensor: Sensor) = sensors.add(sensor)
 }

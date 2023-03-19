@@ -1,30 +1,21 @@
 package fi.aalto.cs.experiments
 
 import fi.aalto.cs.utils.*
-import fi.aalto.cs.utils.AppEdgeType.*
-import fi.aalto.cs.utils.Simulation
-import fi.aalto.cs.utils.TupleDirection.*
-import org.cloudbus.cloudsim.Host
-import org.cloudbus.cloudsim.Pe
-import org.cloudbus.cloudsim.Storage
-import org.cloudbus.cloudsim.power.PowerHost
-import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple
-import org.cloudbus.cloudsim.sdn.overbooking.BwProvisionerOverbooking
-import org.cloudbus.cloudsim.sdn.overbooking.PeProvisionerOverbooking
+import fi.aalto.cs.utils.AppEdgeType.FromSensor
+import fi.aalto.cs.utils.AppEdgeType.ToActuator
+import fi.aalto.cs.utils.TupleDirection.Down
+import fi.aalto.cs.utils.TupleDirection.Up
 import org.fog.application.AppLoop
 import org.fog.application.Application
-import org.fog.entities.*
 import org.fog.entities.Actuator
+import org.fog.entities.FogDevice
+import org.fog.entities.PlacementRequest
+import org.fog.entities.Sensor
 import org.fog.mobilitydata.RandomMobilityGenerator
 import org.fog.mobilitydata.References.*
 import org.fog.placement.MicroservicesMobilityClusteringController
 import org.fog.placement.PlacementLogicFactory.CLUSTERED_MICROSERVICES_PLACEMENT
-import org.fog.policy.AppModuleAllocationPolicy
-import org.fog.scheduler.StreamOperatorScheduler
-import org.fog.utils.FogLinearPowerModel
-import org.fog.utils.FogUtils
 import org.fog.utils.distribution.DeterministicDistribution
-import java.util.*
 
 private enum class Modules : ModuleType {
     Client,
@@ -48,6 +39,10 @@ object SENSOR : ModuleType, TupleType {
     override val name = "SENSOR"
 }
 
+private enum class FogDevices : FogDeviceType {
+    Mobile, ProxyServer, Gateway, cloud // ktlint-disable enum-entry-name-case
+}
+
 private val simulation = Simulation(
     "Cardiovascular Health Monitoring Application CHM)",
     object {
@@ -65,7 +60,7 @@ fun main() {
     simulation.run {
         val controller = MicroservicesMobilityClusteringController(
             "controller",
-            environment.fogDevices,
+            environment.fogDevices.flatMap { it.value },
             environment.sensors,
             listOf(app),
             listOf(2),
@@ -143,94 +138,27 @@ private fun createMobileUsers() {
 
     val mobileUserDataIds = simulation.environment.locator.mobileUserDataId
     for (i in 0 until simulation.config.numberOfMobileUser) {
-        val mobile = addMobile(
-            "mobile_$i",
-            simulation.user.id,
-            simulation.app,
-            NOT_SET,
-        ) // adding mobiles to the physical topology. Smartphones have been modeled as fog devices as well.
-        mobile.uplinkLatency = 2.0 // latency of connection between the smartphone and proxy server is 2 ms
+        val mobile = addMobile(simulation.user.id, simulation.app)
         simulation.environment.locator.linkDataWithInstance(mobile.id, mobileUserDataIds[i])
-        mobile.level = 3
-        simulation.environment.add(mobile)
     }
 }
 
-private fun createFogDevice(
-    nodeName: String,
-    mips: Long,
-    ram: Int,
-    upBw: Long,
-    downBw: Long,
-    ratePerMips: Double,
-    busyPower: Double,
-    idlePower: Double,
-    deviceType: String,
-): MicroserviceFogDevice {
-    val peList: MutableList<Pe> = ArrayList()
+private fun addMobile(userId: Int, app: Application): FogDevice {
+    val mobile = simulation.fogDevice(
+        FogDevices.Mobile,
+        level = FogDeviceLevel.User,
+        microservicesFogDeviceType = MicroservicesFogDeviceType.Client,
+        mips = 200,
+        ram = 2048,
+        downlinkBandwidth = 270,
+        uplinkLatency = 2.0,
+        busyPower = 87.53,
+        idlePower = 82.44,
+    )
 
-    // 3. Create PEs and add these into a list.
-    peList.add(Pe(0, PeProvisionerOverbooking(mips.toDouble()))) // need to store Pe id and MIPS Rating
-    val hostId = FogUtils.generateEntityId()
-    val storage: Long = 1000000 // host storage
-    val bw = 10000
-    val host = PowerHost(
-        hostId,
-        RamProvisionerSimple(ram),
-        BwProvisionerOverbooking(bw.toLong()),
-        storage,
-        peList,
-        StreamOperatorScheduler(peList),
-        FogLinearPowerModel(busyPower, idlePower),
-    )
-    val hostList: MutableList<Host> = ArrayList()
-    hostList.add(host)
-    val arch = "x86" // system architecture
-    val os = "Linux" // operating system
-    val vmm = "Xen"
-    val time_zone = 10.0 // time zone this resource located
-    val cost = 3.0 // the cost of using processing in this resource
-    val costPerMem = 0.05 // the cost of using memory in this resource
-    val costPerStorage = 0.001 // the cost of using storage in this
-    // resource
-    val costPerBw = 0.0 // the cost of using bw in this resource
-    val storageList = LinkedList<Storage>() // we are not adding SAN
-    // devices by now
-    val characteristics = FogDeviceCharacteristics(
-        arch, os, vmm, host, time_zone, cost, costPerMem,
-        costPerStorage, costPerBw,
-    )
-    return MicroserviceFogDevice(
-        nodeName,
-        characteristics,
-        AppModuleAllocationPolicy(hostList),
-        storageList,
-        10.0,
-        upBw.toDouble(),
-        downBw.toDouble(),
-        10000.0,
-        0.0,
-        ratePerMips,
-        deviceType,
-    )
-}
-
-private fun addMobile(name: String, userId: Int, app: Application, parentId: Int): FogDevice {
-    val mobile: FogDevice = createFogDevice(
-        name,
-        200,
-        2048,
-        10000,
-        270,
-        0.0,
-        87.53,
-        82.44,
-        MicroserviceFogDevice.CLIENT,
-    )
-    mobile.parentId = parentId
     // locator.setInitialLocation(name,drone.getId());
     val mobileSensor = Sensor(
-        "s-$name",
+        "s-${mobile.name}",
         SENSOR.name,
         userId,
         app.appId,
@@ -238,7 +166,7 @@ private fun addMobile(name: String, userId: Int, app: Application, parentId: Int
     ) // inter-transmission time of EEG sensor follows a deterministic distribution
     mobileSensor.app = app
     simulation.environment.add(mobileSensor)
-    val mobileDisplay = Actuator("a-$name", userId, app.appId, Modules.Display.name)
+    val mobileDisplay = Actuator("a-${mobile.name}", userId, app.appId, Modules.Display.name)
     simulation.environment.add(mobileDisplay)
     mobileSensor.gatewayDeviceId = mobile.id
     mobileSensor.latency = 6.0 // latency of connection between EEG sensors and the parent Smartphone is 6 ms
@@ -252,67 +180,55 @@ private fun createFogDevices() {
     val locator = simulation.environment.locator
     locator.parseResourceInfo()
     if (locator.getLevelWiseResources(locator.getLevelID("Cloud")).size == 1) {
-        val cloud: FogDevice = createFogDevice(
-            "cloud",
-            44800,
-            40000,
-            100,
-            10000,
-            0.01,
-            (16 * 103).toDouble(),
-            16 * 83.25,
-            MicroserviceFogDevice.CLOUD,
-        ) // creates the fog device Cloud at the apex of the hierarchy with level=0
-        cloud.parentId = NOT_SET
+        val cloud = simulation.fogDevice(
+            FogDevices.cloud,
+            level = FogDeviceLevel.Cloud,
+            microservicesFogDeviceType = MicroservicesFogDeviceType.Cloud,
+            mips = 44_800,
+            ram = 40_000,
+            uplinkBandwidth = 100,
+            costRatePerMips = 0.001,
+            busyPower = 16 * 103.0,
+            idlePower = 16 * 83.25,
+
+        )
         locator.linkDataWithInstance(
             cloud.id,
             locator.getLevelWiseResources(locator.getLevelID("Cloud"))[0],
         )
-        cloud.level = 0
-        simulation.environment.add(cloud)
         for (i in locator.getLevelWiseResources(locator.getLevelID("Proxy")).indices) {
-            val proxy: FogDevice = createFogDevice(
-                "proxy-server_$i",
-                2800,
-                4000,
-                10000,
-                10000,
-                0.0,
-                107.339,
-                83.4333,
-                MicroserviceFogDevice.FON,
-            ) // creates the fog device Proxy Server (level=1)
+            val proxy = simulation.fogDevice(
+                FogDevices.ProxyServer,
+                level = FogDeviceLevel.Proxy,
+                microservicesFogDeviceType = MicroservicesFogDeviceType.FON,
+                parentId = cloud.id,
+                mips = 2800,
+                ram = 4000,
+                uplinkLatency = 100.0,
+                busyPower = 107.339,
+                idlePower = 83.4333,
+            )
             locator.linkDataWithInstance(
                 proxy.id,
-                locator.getLevelWiseResources(
-                    locator.getLevelID("Proxy"),
-                )[i],
+                locator.getLevelWiseResources(locator.getLevelID("Proxy"))[i],
             )
-            proxy.parentId = cloud.id // setting Cloud as parent of the Proxy Server
-            proxy.uplinkLatency = 100.0 // latency of connection from Proxy Server to the Cloud is 100 ms
-            proxy.level = 1
-            simulation.environment.add(proxy)
         }
         for (i in locator.getLevelWiseResources(locator.getLevelID("Gateway")).indices) {
-            val gateway: FogDevice = createFogDevice(
-                "gateway_$i",
-                2800,
-                4000,
-                10000,
-                10000,
-                0.0,
-                107.339,
-                83.4333,
-                MicroserviceFogDevice.FCN,
+            val gateway = simulation.fogDevice(
+                FogDevices.Gateway,
+                level = FogDeviceLevel.Gateway,
+                microservicesFogDeviceType = MicroservicesFogDeviceType.FCN,
+                mips = 2800,
+                ram = 4000,
+                uplinkLatency = 4.0,
+                busyPower = 107.339,
+                idlePower = 83.4333,
             )
             locator.linkDataWithInstance(
                 gateway.id,
                 locator.getLevelWiseResources(locator.getLevelID("Gateway"))[i],
             )
             gateway.parentId = locator.determineParent(gateway.id, SETUP_TIME)
-            gateway.uplinkLatency = 4.0
-            gateway.level = 2
-            simulation.environment.add(gateway)
         }
     }
 }
