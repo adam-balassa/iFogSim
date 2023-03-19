@@ -5,12 +5,8 @@ import fi.aalto.cs.utils.AppEdgeType.FromSensor
 import fi.aalto.cs.utils.AppEdgeType.ToActuator
 import fi.aalto.cs.utils.TupleDirection.Down
 import fi.aalto.cs.utils.TupleDirection.Up
-import org.fog.application.AppLoop
-import org.fog.application.Application
-import org.fog.entities.Actuator
 import org.fog.entities.FogDevice
 import org.fog.entities.PlacementRequest
-import org.fog.entities.Sensor
 import org.fog.mobilitydata.RandomMobilityGenerator
 import org.fog.mobilitydata.References.*
 import org.fog.placement.MicroservicesMobilityClusteringController
@@ -113,20 +109,14 @@ private fun createApplication() {
 
     simulation.app.setSpecialPlacementInfo(Modules.Service3.name, "cloud")
 
-    simulation.app.run {
-        loops = listOf(
-            AppLoop(
-                listOf(
-                    SENSOR.name,
-                    Modules.Client.name,
-                    Modules.Service1.name,
-                    Modules.Service2.name,
-                    Modules.Client.name,
-                    Modules.Display.name,
-                ),
-            ),
-        )
-    }
+    simulation.appLoop(
+        SENSOR,
+        Modules.Client,
+        Modules.Service1,
+        Modules.Service2,
+        Modules.Client,
+        Modules.Display
+    )
 }
 
 private fun createMobileUsers() {
@@ -138,13 +128,13 @@ private fun createMobileUsers() {
 
     val mobileUserDataIds = simulation.environment.locator.mobileUserDataId
     for (i in 0 until simulation.config.numberOfMobileUser) {
-        val mobile = addMobile(simulation.user.id, simulation.app)
+        val mobile = addMobile()
         simulation.environment.locator.linkDataWithInstance(mobile.id, mobileUserDataIds[i])
     }
 }
 
-private fun addMobile(userId: Int, app: Application): FogDevice {
-    val mobile = simulation.fogDevice(
+private fun addMobile(): FogDevice =
+    simulation.fogDevice(
         FogDevices.Mobile,
         level = FogDeviceLevel.User,
         microservicesFogDeviceType = MicroservicesFogDeviceType.Client,
@@ -154,27 +144,20 @@ private fun addMobile(userId: Int, app: Application): FogDevice {
         uplinkLatency = 2.0,
         busyPower = 87.53,
         idlePower = 82.44,
-    )
+    ).also { mobile ->
+        simulation.sensor(
+            gateway = mobile,
+            tupleType = SENSOR,
+            latency = 6.0,
+            emissionDistribution = DeterministicDistribution(simulation.config.sensorTransmissionTime)
+        )
 
-    // locator.setInitialLocation(name,drone.getId());
-    val mobileSensor = Sensor(
-        "s-${mobile.name}",
-        SENSOR.name,
-        userId,
-        app.appId,
-        DeterministicDistribution(simulation.config.sensorTransmissionTime),
-    ) // inter-transmission time of EEG sensor follows a deterministic distribution
-    mobileSensor.app = app
-    simulation.environment.add(mobileSensor)
-    val mobileDisplay = Actuator("a-${mobile.name}", userId, app.appId, Modules.Display.name)
-    simulation.environment.add(mobileDisplay)
-    mobileSensor.gatewayDeviceId = mobile.id
-    mobileSensor.latency = 6.0 // latency of connection between EEG sensors and the parent Smartphone is 6 ms
-    mobileDisplay.gatewayDeviceId = mobile.id
-    mobileDisplay.latency = 1.0 // latency of connection between Display actuator and the parent Smartphone is 1 ms
-    mobileDisplay.app = app
-    return mobile
-}
+        simulation.actuator(
+            gateway = mobile,
+            module = Modules.Display,
+            latency = 1.0,
+        )
+    }
 
 private fun createFogDevices() {
     val locator = simulation.environment.locator

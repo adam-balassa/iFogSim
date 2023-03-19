@@ -6,18 +6,18 @@ import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple
 import org.cloudbus.cloudsim.sdn.overbooking.BwProvisionerOverbooking
 import org.cloudbus.cloudsim.sdn.overbooking.PeProvisionerOverbooking
 import org.fog.application.AppEdge
+import org.fog.application.AppLoop
 import org.fog.application.AppModule
 import org.fog.application.selectivity.FractionalSelectivity
 import org.fog.application.selectivity.SelectivityModel
-import org.fog.entities.FogDevice
-import org.fog.entities.FogDeviceCharacteristics
-import org.fog.entities.MicroserviceFogDevice
+import org.fog.entities.*
 import org.fog.mobilitydata.References.NOT_SET
 import org.fog.policy.AppModuleAllocationPolicy
 import org.fog.scheduler.StreamOperatorScheduler
 import org.fog.scheduler.TupleScheduler
 import org.fog.utils.FogLinearPowerModel
 import org.fog.utils.FogUtils.generateEntityId
+import org.fog.utils.distribution.Distribution
 import org.apache.commons.math3.util.Pair as ApachePair
 
 fun forwarding(mapping: Pair<TupleType, TupleType>, probability: Double = 1.0) =
@@ -140,4 +140,45 @@ fun <T>Simulation<T>.fogDevice(
             environment.fogDevices[type.name] = mutableListOf(it)
         }
     }
+}
+
+fun <T>Simulation<T>.appLoop(vararg modules: ModuleType) {
+    if (app.loops == null) app.loops = mutableListOf()
+    app.loops.add(AppLoop(modules.map { it.name }))
+}
+
+fun <T>Simulation<T>.sensor(
+    gateway: FogDevice,
+    tupleType: TupleType,
+    latency: Double = 0.0,
+    emissionDistribution: Distribution
+) {
+    environment.add(Sensor(
+        "s-${gateway.name}",
+        tupleType.name,
+        user.id,
+        app.appId,
+        emissionDistribution
+    ).also {
+        it.latency = latency
+        it.gatewayDeviceId = gateway.id
+        it.app = app
+    })
+}
+
+fun <T>Simulation<T>.actuator(
+    gateway: FogDevice,
+    module: ModuleType,
+    latency: Double = 0.0,
+) {
+    environment.add(Actuator(
+        "a-${gateway.name}",
+        user.id,
+        app.appId,
+        module.name
+    ).also {
+        it.latency = latency
+        it.gatewayDeviceId = gateway.id
+        it.app = app
+    })
 }
