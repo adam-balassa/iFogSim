@@ -39,22 +39,14 @@ class Simulation<Config>(
 
 class SimulationEnvironment {
     val locator = LocationHandler(DataParser())
-    val fogDevices = mutableMapOf("generic" to mutableListOf<FogDevice>())
+    val fogDevices = mutableMapOf<String, MutableList<FogDevice>>()
     val sensors = mutableListOf<Sensor>()
     val actuators = mutableListOf<Actuator>()
 
-    fun add(device: FogDevice) = fogDevices["generic"]?.add(device)
+    fun add(device: FogDevice) {
+        fogDevices["generic"]?.add(device)
+            ?: let { fogDevices["generic"] = mutableListOf(device) }
+    }
     fun add(actuator: Actuator) = actuators.add(actuator)
     fun add(sensor: Sensor) = sensors.add(sensor)
-}
-
-private inline fun <reified T> getGlobalSettings(settings: T): Map<String, String> {
-    val type = T::class
-    return mutableMapOf<String, String>().apply {
-        type.members.forEach {
-            if (it.parameters.size == 1 && it.name !in listOf("hashCode", "toString")) {
-                put(it.name, it.call(settings).toString())
-            }
-        }
-    }
 }

@@ -32,6 +32,7 @@ dependencies {
     implementation(files("jars/json-simple-1.1.1.jar"))
     implementation(files("jars/commons-math3-3.5/commons-math3-3.5.jar"))
     implementation(files("jars/guava-18.0.jar"))
+    implementation("com.google.code.gson:gson:2.10.1")
 }
 
 val compileKotlin: KotlinCompile by tasks

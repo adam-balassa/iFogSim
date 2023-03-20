@@ -1054,7 +1054,7 @@ public class Datacenter extends SimEntity {
 	 * 
 	 * @return the characteristics
 	 */
-	protected DatacenterCharacteristics getCharacteristics() {
+	public DatacenterCharacteristics getCharacteristics() {
 		return characteristics;
 	}
 
@@ -1163,7 +1163,7 @@ public class Datacenter extends SimEntity {
 	 * 
 	 * @return the scheduling interval
 	 */
-	protected double getSchedulingInterval() {
+	public double getSchedulingInterval() {
 		return schedulingInterval;
 	}
 

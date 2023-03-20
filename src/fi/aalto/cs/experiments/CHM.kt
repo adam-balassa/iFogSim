@@ -57,6 +57,8 @@ fun main() {
     }
 
     simulation.run()
+
+    reportSimulation(simulation, "./simulations")
 }
 
 private fun initializeApplication() = simulation.apply {

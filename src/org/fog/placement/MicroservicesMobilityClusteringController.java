@@ -101,7 +101,7 @@ public class MicroservicesMobilityClusteringController extends MicroservicesCont
                 printCostDetails();
                 printNetworkUsageDetails();
                 printMigrationDelayDetails();
-                System.exit(0);
+                CloudSim.abruptallyTerminate();
                 break;
             default:
                 super.processEvent(ev);
