@@ -1,0 +1,12 @@
+* {
+  font-family: var(--font-family);
+}
+
+body {
+
+}
+
+#app {
+  height: 100%;
+}
+
