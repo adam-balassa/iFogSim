@@ -1,21 +1,26 @@
+export type Config = {[key: string]: string | number | boolean}
+
 export interface ExperimentSetup {
-  actuators: any[]
+  actuators: Config[]
   application: {
-    modules: any[],
-    edges: any[],
+    modules: (Config & { name: string })[],
+    edges: (Config & { from: string, to: string, tuple: string })[],
   }
-  config: {[key: string]: any},
-  fogDevices: any[]
+  config: Config,
+  fogDevices: (Config & { level: 'Cloud' | 'Proxy' | 'Gateway' | 'User' })[]
   network: {
     id: number;
     parent: number
-    level: string;
+    level: number | string;
+    group?: string;
     name: string;
   }[]
-  sensors: any[];
+  sensors: (Config & { tuple: string })[];
 }
 
-export interface Experiment {
+export interface ExperimentDetails {
+  app: string;
+  experiment: string;
   setup: ExperimentSetup
 }
 

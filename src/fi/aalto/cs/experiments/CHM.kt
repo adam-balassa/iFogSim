@@ -36,10 +36,10 @@ private enum class FogDevices : FogDeviceType {
 }
 
 private val simulation = Simulation(
-    "Cardiovascular Health Monitoring Application CHM)",
+    "Cardiovascular Health Monitoring Application (CHM)",
     object {
         val numberOfMobileUser = 5
-        val sensorTransmissionTime = 10.0
+        val sensorTransmissionTime = 30.0
     },
 )
 

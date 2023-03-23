@@ -1,14 +1,14 @@
 <template>
-  <main>
-    <Splitter class="splitter">
+  <main class="w-screen">
+    <Splitter class="splitter max-w-full">
       <aside>
-        <SplitterPanel :size="20" :min-size="20">
+        <SplitterPanel :size="25" :min-size="20">
           <NavigationPanel/>
         </SplitterPanel>
       </aside>
 
-      <SplitterPanel :size="80">
-        <h1>Experiment details</h1>
+      <SplitterPanel class="overflow-x-hidden" :size="75">
+        <ExperimentDetailsPanel class="max-w-full"/>
       </SplitterPanel>
     </Splitter>
   </main>
@@ -18,6 +18,7 @@
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import NavigationPanel from "./views/navigation-panel/navigation-panel.vue";
+import ExperimentDetailsPanel from "./views/experiment-details-panel/experiment-details-panel.vue";
 </script>
 
 <style scoped>

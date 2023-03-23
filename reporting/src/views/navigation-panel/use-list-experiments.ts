@@ -13,10 +13,10 @@ export default function useListExperiments() {
   }
 
   if (!experimentListing.value) {
-    fetchExperiments()
+    fetchExperiments().then()
   }
 
   return {
-    experimentListing
+    experiments: experimentListing
   }
 }

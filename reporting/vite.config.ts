@@ -32,12 +32,12 @@ export default defineConfig({
       },
       '/experiment': {
         bypass(req, res) {
-          const request = new URL(req.url)
+          const request = new URL(`http://localhost${req.url}`)
           const app = request.searchParams.get('app')
           const experiment = request.searchParams.get('experiment')
 
           const folder = `${simulationDir}/${app}/${experiment}`
-          const setup = fs.readFileSync(`${folder}/setup.json`)
+          const setup = JSON.parse(fs.readFileSync(`${folder}/setup.json`).toString())
 
           return sendJson(res, { setup })
         }

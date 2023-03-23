@@ -85,21 +85,26 @@ fun getActuatorConfigs(actuators: List<Actuator>) =
     }
 
 fun getNetworkConfig(fogDevices: MutableMap<String, MutableList<FogDevice>>) =
-    fogDevices.flatMap { (levelId, devices) ->
+    fogDevices.flatMap { (groupId, devices) ->
         devices.map {
             mapOf(
-                "level" to levelId,
                 "id" to it.id,
                 "name" to it.name,
                 "parent" to it.parentId
+                "level" to it.level,
+                "group" to groupId,
             )
         }
     }
 
 fun getFogDeviceConfigs(fogDevices: Map<String, List<FogDevice>>) =
-    fogDevices.map { (levelId, devices) -> getConfigForFogDevice(levelId, devices.first()) }
+    fogDevices.map { (levelId, devices) ->
+        getConfigForFogDevice(levelId, devices.first()).apply {
+            put("numberOfDevices", devices.size)
+        }
+    }
 
-fun getConfigForFogDevice(levelId: String, device: FogDevice) =
+fun getConfigForFogDevice(levelId: String, device: FogDevice): MutableMap<String, Any> =
     listOfNotNull(
         "level" to levelId,
         "mips" to device.host.getPeList<Pe>().first().mips,
@@ -120,7 +125,7 @@ fun getConfigForFogDevice(levelId: String, device: FogDevice) =
         "costRatePerBandwidth" to device.characteristics.costPerBw,
         "costRatePerStorage" to device.characteristics.costPerStorage,
         (device as? MicroserviceFogDevice)?.let { "microservicesFogDeviceType" to it.deviceType }
-    ).toMap()
+    ).toMap().toMutableMap()
 
 fun getApplicationConfig(app: Application) =
     mapOf(
@@ -137,6 +142,7 @@ fun getApplicationConfig(app: Application) =
             mapOf(
                 "from" to it.source,
                 "to" to it.destination,
+                "tuple" to it.tupleType,
                 "direction" to (it.direction == TupleDirection.Up.id),
                 "cpuLength" to it.tupleCpuLength,
                 "dataSize" to it.tupleNwLength
