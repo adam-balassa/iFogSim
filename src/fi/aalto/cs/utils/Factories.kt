@@ -104,6 +104,11 @@ fun <T>Simulation<T>.appEdge(
  * @param schedulingInterval How often should the VM scheduling logic run in the host (ms)
  * @param busyPower Power consumption when the device is performing computation in MJ
  * @param idlePower Power consumption when the device is idle in MJ
+ * @param costRatePerMips The cost of consuming 1 million instructions per second
+ * @param costRatePerSecond The cost of running the host for 1 second
+ * @param costRatePerBandwidth The cost of 1 Mbps
+ * @param costRatePerStorage The cost of 1MB storage
+ * @param microservicesFogDeviceType Indicates that the fog device is a MicroserviceFogDevice and determines its function in the microservices infrastructure
  */
 fun <T>Simulation<T>.fogDevice(
     type: FogDeviceType,
@@ -183,6 +188,7 @@ fun <T>Simulation<T>.fogDevice(
 
 /**
  * Adds an AppLoop to the application
+ * @param modules the path of modules to measure for E2E latency
  */
 fun <T>Simulation<T>.appLoop(vararg modules: ModuleType) {
     if (app.loops == null) app.loops = mutableListOf()
@@ -191,6 +197,10 @@ fun <T>Simulation<T>.appLoop(vararg modules: ModuleType) {
 
 /**
  * Adds a sensor to the simulation environment
+ * @param gateway The fog device that the sensor is attached to
+ * @param tupleType The tuple that the sensor emits periodically
+ * @param latency The latency between the sensor and its gateway device
+ * @param emissionDistribution The probabilistic model for the delay between 2 emissions
  */
 fun <T>Simulation<T>.sensor(
     gateway: FogDevice,
@@ -212,7 +222,10 @@ fun <T>Simulation<T>.sensor(
 }
 
 /**
- * Adds an actuator to the simulation environemnt
+ * Adds an actuator to the simulation environment
+ * @param gateway The fog device that the actuator is attached to
+ * @param module The module that the actuator acts as (mostly for E2E latency measurements)
+ * @param latency The latency between the fog device and the actuator
  */
 fun <T>Simulation<T>.actuator(
     gateway: FogDevice,
@@ -231,7 +244,10 @@ fun <T>Simulation<T>.actuator(
     })
 }
 
-fun <T>Simulation<T>.placementRequest(
+/**
+ * Factory method for a client module placement request
+ */
+private fun <T>Simulation<T>.placementRequest(
     module: ModuleType,
     sensor: Sensor
 ) = PlacementRequest(
@@ -241,6 +257,11 @@ fun <T>Simulation<T>.placementRequest(
     mutableMapOf(module.name to sensor.gatewayDeviceId)
 )
 
+/**
+ * Generic iFogSim controller
+ * @param placementStrategy The module placement strategy
+ * @param staticPlacement Determines which modules should be forced to be placed onto all of the devices for the given device type
+ */
 fun <T>Simulation<T>.controller(
     placementStrategy: ModulePlacementStrategy,
     staticPlacement: Map<ModuleType, FogDeviceType> = mapOf(),
@@ -283,6 +304,13 @@ fun <T>Simulation<T>.controller(
     )
 }
 
+/**
+ * Creates a MicroservicesController
+ * @param clusterLevels determines which devices can manage their clusters
+ * @param clusterLinkLatency the latency between any 2 devices in a cluster
+ * @param placementStrategy the microservice placement strategy
+ * @param clientModule which AppModule should be forced to be placed on client devices
+ */
 fun <T>Simulation<T>.microservicesController(
     clusterLevels: List<FogDeviceLevel> = listOf(),
     clusterLinkLatency: Int = 0,
@@ -303,6 +331,13 @@ fun <T>Simulation<T>.microservicesController(
     }
 }
 
+/**
+ * Creates a MicroservicesMobilityClusteringController
+ * @param clusterLevels determines which devices can manage their clusters
+ * @param clusterLinkLatency the latency between any 2 devices in a cluster
+ * @param placementStrategy the microservice placement strategy
+ * @param clientModule which AppModule should be forced to be placed on client devices
+ */
 fun <T>Simulation<T>.microservicesMobilityClusteringController(
     clusterLevels: List<FogDeviceLevel>,
     clusterLinkLatency: Int = 0,
