@@ -34,6 +34,15 @@ import org.apache.commons.math3.util.Pair as ApachePair
 fun forwarding(mapping: Pair<TupleType, TupleType>, probability: Double = 1.0) =
     mapping to FractionalSelectivity(probability)
 
+/**
+ * Add an app module to the application
+ * @param module Name of the `AppModule`
+ * @param mips CPU resource consumption in Million instructions per second
+ * @param ram Memory consumption in MB
+ * @param storage Storage consumption in MB
+ * @param bandwidth Bandwidth capacity to allocate in Mbps
+ * @param selectivityMapping Forwarding probabilistic model from input tuples to output tuples
+ */
 fun <T>Simulation<T>.appModule(
     module: ModuleType,
     mips: Double = 1000.0,
@@ -63,6 +72,16 @@ fun <T>Simulation<T>.appModule(
     )
 }
 
+/**
+ * Add an app edge between two app modules to the application
+ * @param source Source AppModule
+ * @param destination Destination AppModule
+ * @param tupleType The tuple's name that travels on the AppEdge
+ * @param direction Up/Down/Actuator: which port should a FogDevice use to forward the tuple
+ * @param cpuLength CPU power needed to process the tuple in Million instructions
+ * @param dataSize The size of the tuple in MB
+ * @param appEdgeType Indicates whether the edge is between modules or sensors or actuators
+ */
 fun <T>Simulation<T>.appEdge(
     source: ModuleType,
     destination: ModuleType,
@@ -77,6 +96,22 @@ fun <T>Simulation<T>.appEdge(
     app.edgeMap[tupleType.name] = edge
 }
 
+/**
+ * Constructs a FogDevice and adds it to the simulation environment
+ * @param type Name of the fog device is derived from the type
+ * @param mips CPU frequency in Million instructions per second
+ * @param ram Memory capacity of the device in MB
+ * @param parentId The parent fog device in the network topology tree
+ * @param level Indicates the level of the fog device in the network topology tree
+ * @param storage Storage capacity of the device in MB
+ * @param uplinkBandwidth Bandwidth of the up-link port of the device in Mbps
+ * @param downlinkBandwidth Bandwidth of the down-link port of the device in Mbps
+ * @param clusterLinkBandwidth Bandwidth between cluster nodes in Mbps
+ * @param uplinkLatency Latency of the up-link connection in milliseconds
+ * @param schedulingInterval How often should the VM scheduling logic run in the host (ms)
+ * @param busyPower Power consumption when the device is performing computation in MJ
+ * @param idlePower Power consumption when the device is idle in MJ
+ */
 fun <T>Simulation<T>.fogDevice(
     type: FogDeviceType,
     mips: Long, // million CPU instructions/s
@@ -153,11 +188,17 @@ fun <T>Simulation<T>.fogDevice(
     }
 }
 
+/**
+ * Adds an AppLoop to the application
+ */
 fun <T>Simulation<T>.appLoop(vararg modules: ModuleType) {
     if (app.loops == null) app.loops = mutableListOf()
     app.loops.add(AppLoop(modules.map { it.name }))
 }
 
+/**
+ * Adds a sensor to the simulation environment
+ */
 fun <T>Simulation<T>.sensor(
     gateway: FogDevice,
     tupleType: TupleType,
@@ -177,6 +218,9 @@ fun <T>Simulation<T>.sensor(
     })
 }
 
+/**
+ * Adds an actuator to the simulation environemnt
+ */
 fun <T>Simulation<T>.actuator(
     gateway: FogDevice,
     module: ModuleType,
