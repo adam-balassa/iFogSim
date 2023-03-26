@@ -16,6 +16,7 @@ import Tree, { TreeExpandedKeys, TreeNode, TreeSelectionKeys } from 'primevue/tr
 import useListExperiments from "./use-list-experiments";
 import { computed, ref, watch } from "vue";
 import useSelectedExperiment from "../use-selected-experiment";
+import { last } from "lodash";
 
 const { experiments } = useListExperiments()
 const { selectedExperiment, selectExperiment } = useSelectedExperiment()
@@ -39,7 +40,7 @@ const experimentNodes = computed<TreeNode[] | undefined>(() => experiments.value
 
 watch(experiments, nextExperiments => {
   if (nextExperiments?.length && nextExperiments[0].experiments.length && !selectedExperiment.value) {
-    select(nextExperiments[0].app, nextExperiments[0].experiments[0])
+    select(last(nextExperiments)!.app, last(last(nextExperiments)!.experiments)!)
   }
   if (nextExperiments) {
     const expandAll: TreeExpandedKeys = {};

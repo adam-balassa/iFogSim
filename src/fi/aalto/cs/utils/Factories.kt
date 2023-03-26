@@ -13,22 +13,15 @@ import org.fog.application.selectivity.FractionalSelectivity
 import org.fog.application.selectivity.SelectivityModel
 import org.fog.entities.*
 import org.fog.mobilitydata.References.NOT_SET
-import org.fog.placement.MicroservicesMobilityClusteringController
+import org.fog.placement.*
 import org.fog.policy.AppModuleAllocationPolicy
 import org.fog.scheduler.StreamOperatorScheduler
 import org.fog.scheduler.TupleScheduler
 import org.fog.utils.FogLinearPowerModel
 import org.fog.utils.FogUtils.generateEntityId
 import org.fog.utils.distribution.Distribution
-import kotlin.Double
-import kotlin.Int
-import kotlin.Long
 import kotlin.Pair
-import kotlin.String
-import kotlin.also
 import kotlin.apply
-import kotlin.let
-import kotlin.to
 import org.apache.commons.math3.util.Pair as ApachePair
 
 fun forwarding(mapping: Pair<TupleType, TupleType>, probability: Double = 1.0) =
@@ -248,10 +241,73 @@ fun <T>Simulation<T>.placementRequest(
     mutableMapOf(module.name to sensor.gatewayDeviceId)
 )
 
+fun <T>Simulation<T>.controller(
+    placementStrategy: ModulePlacementStrategy,
+    staticPlacement: Map<ModuleType, FogDeviceType> = mapOf(),
+) = Controller(
+    "controller",
+    environment.fogDevices.flatMap { it.value },
+    environment.sensors,
+    environment.actuators
+).apply {
+    val moduleMapping = ModuleMapping.createModuleMapping().apply {
+        staticPlacement.forEach { (moduleType, fogDeviceType) ->
+            environment.fogDevices[fogDeviceType.name]?.forEach {
+                addModuleToDevice(moduleType.name, it.name)
+            }
+        }
+    }
+    submitApplication(
+        app,
+        0,
+        when (placementStrategy) {
+            ModulePlacementStrategy.Edgewards -> ModulePlacementEdgewards(
+                environment.fogDevices.flatMap { it.value },
+                environment.sensors,
+                environment.actuators,
+                app,
+                moduleMapping
+            )
+            ModulePlacementStrategy.Static -> ModulePlacementMapping(
+                environment.fogDevices.flatMap { it.value },
+                app,
+                moduleMapping
+            )
+            ModulePlacementStrategy.CloudOnly -> ModulePlacementOnlyCloud(
+                environment.fogDevices.flatMap { it.value },
+                environment.sensors,
+                environment.actuators,
+                app
+            )
+        }
+    )
+}
+
+fun <T>Simulation<T>.microservicesController(
+    clusterLevels: List<FogDeviceLevel> = listOf(),
+    clusterLinkLatency: Int = 0,
+    placementStrategy: MicroservicePlacementStrategy = ClusteredPlacement,
+    clientModule: ModuleType? = null
+) = MicroservicesController(
+    "controller",
+    environment.fogDevices.flatMap { it.value },
+    environment.sensors,
+    listOf(app),
+    clusterLevels.map { it.id },
+    clusterLinkLatency.toDouble(),
+    placementStrategy.id,
+).apply {
+    if (clientModule != null) {
+        val clientModulePlacements = environment.sensors.map { placementRequest(clientModule, it) }
+        submitPlacementRequests(clientModulePlacements, 1)
+    }
+}
+
 fun <T>Simulation<T>.microservicesMobilityClusteringController(
     clusterLevels: List<FogDeviceLevel>,
     clusterLinkLatency: Int = 0,
-    placementStrategy: MicroservicePlacementStrategy = ClusteredPlacement
+    placementStrategy: MicroservicePlacementStrategy = ClusteredPlacement,
+    clientModule: ModuleType? = null
 ) = MicroservicesMobilityClusteringController(
     "controller",
     environment.fogDevices.flatMap { it.value },
@@ -261,4 +317,9 @@ fun <T>Simulation<T>.microservicesMobilityClusteringController(
     clusterLinkLatency.toDouble(),
     placementStrategy.id,
     environment.locator,
-)
+).apply {
+    if (clientModule != null) {
+        val clientModulePlacements = environment.sensors.map { placementRequest(clientModule, it) }
+        submitPlacementRequests(clientModulePlacements, 1)
+    }
+}

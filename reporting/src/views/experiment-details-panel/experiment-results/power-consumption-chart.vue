@@ -11,11 +11,11 @@
 
 <script setup lang="ts">
 import Chart from 'primevue/chart';
-import { ExperimentResults } from "../../../types/types";
-import { computed } from "vue";
+import {ExperimentResults} from "../../../types/types";
+import {computed} from "vue";
 import _ from "lodash";
-import { CDF } from "../../../utils/helpers";
-import { ChartData, ChartOptions } from "chart.js";
+import {CDF} from "../../../utils/helpers";
+import {ChartData} from "chart.js";
 
 const props = defineProps<{
   powerConsumptions: ExperimentResults['fogDeviceEnergyConsumptions']
@@ -28,7 +28,7 @@ const chartData = computed<ChartData<'scatter'>>(() => ({
         label: group[0].group,
         showLine: true,
         data: CDF(group.map(d => d.energy)),
-        tension: .4
+        tension: .1
       })).value()
 }))
 

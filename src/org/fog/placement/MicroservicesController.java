@@ -219,7 +219,7 @@ public class MicroservicesController extends SimEntity {
                 printCostDetails();
                 printNetworkUsageDetails();
                 printQoSDetails();
-                System.exit(0);
+                CloudSim.abruptallyTerminate();
                 break;
         }
 

@@ -7,11 +7,10 @@
 
 <script setup lang="ts">
 import Chart from 'primevue/chart';
-import { ExperimentResults } from "../../../types/types";
-import { computed } from "vue";
-import _ from "lodash";
-import { CDF } from "../../../utils/helpers";
-import { ChartData, ChartOptions } from "chart.js";
+import {ExperimentResults} from "../../../types/types";
+import {computed} from "vue";
+import {CDF} from "../../../utils/helpers";
+import {ChartData} from "chart.js";
 
 const props = defineProps<{
   appLoopLatencies: ExperimentResults['appLoopLatencies']
@@ -24,7 +23,7 @@ const datasets = computed<ChartData<'scatter'>[]>(() => (
         label: appLoop.appLoop.join(' > '),
         showLine: true,
         data: CDF(appLoop.latencies),
-        tension: .4
+        tension: .1
       }
     ]
   }))

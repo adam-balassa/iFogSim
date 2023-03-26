@@ -21,7 +21,12 @@ import kotlin.io.path.createDirectories
 import kotlin.io.path.createFile
 import kotlin.io.path.writeText
 
+var REPORTING_ENABLED = false
+
 inline fun <reified Config> reportSimulation(simulation: Simulation<Config>, rootDirectory: String) {
+    if (!REPORTING_ENABLED) {
+        return
+    }
     val formattedTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss").run {
         format(simulation.now.time)
     }

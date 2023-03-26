@@ -25,3 +25,7 @@ enum class AppEdgeType(val id: Int) {
 enum class MicroservicePlacementStrategy(val id: Int) {
     ClusteredPlacement(2), DistributedPlacement(3)
 }
+
+enum class ModulePlacementStrategy {
+    Edgewards, CloudOnly, Static
+}
