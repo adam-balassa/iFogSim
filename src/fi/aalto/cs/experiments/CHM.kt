@@ -10,7 +10,7 @@ import org.fog.mobilitydata.References.*
 import org.fog.utils.distribution.DeterministicDistribution
 
 fun main() {
-    enableReporting()
+    // enableReporting()
     CHM().run()
 }
 
@@ -44,7 +44,7 @@ class CHM {
     private val simulation = Simulation(
         "Cardiovascular Health Monitoring Application (CHM)",
         object {
-            val numberOfMobileUser = 5
+            val numberOfMobileUser = 20
             val sensorTransmissionTime = 30.0
         },
     )

@@ -31,7 +31,7 @@ const props = defineProps<{
 
 const summary = computed(() => [
   { metric: 'Execution time (ms)', value: props.results.executionTime },
-  { metric: 'Network usage (GB)', value: props.results.networkUsage },
+  { metric: 'Network usage (MB)', value: props.results.networkUsage },
   { metric: 'Migration delay (ms)', value: props.results.migrationDelay.toFixed(2) },
 ])
 
