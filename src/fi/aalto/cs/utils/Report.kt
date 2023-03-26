@@ -1,14 +1,21 @@
 package fi.aalto.cs.utils
 
 import com.google.gson.GsonBuilder
+import fi.aalto.cs.extensions.E2ELatencyMonitor
 import org.cloudbus.cloudsim.Pe
+import org.fog.application.AppLoop
 import org.fog.application.Application
 import org.fog.entities.Actuator
 import org.fog.entities.FogDevice
 import org.fog.entities.MicroserviceFogDevice
 import org.fog.entities.Sensor
+import org.fog.utils.Config
+import org.fog.utils.MigrationDelayMonitor
+import org.fog.utils.NetworkUsageMonitor
+import org.fog.utils.TimeKeeper
 import org.fog.utils.distribution.DeterministicDistribution
 import java.text.SimpleDateFormat
+import java.util.*
 import kotlin.io.path.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.createFile
@@ -21,11 +28,63 @@ inline fun <reified Config> reportSimulation(simulation: Simulation<Config>, roo
     val simulationResultDirectory = Path(rootDirectory, simulation.name, formattedTime)
     simulationResultDirectory.createDirectories()
 
+    val gson = GsonBuilder().setPrettyPrinting().create()
+
     val setupFile = simulationResultDirectory.resolve("setup.json")
-    setupFile.createFile().writeText(reportSimulationSetup(simulation))
+    setupFile.createFile().writeText(gson.toJson(reportSimulationSetup(simulation)))
+
+    val resultFile = simulationResultDirectory.resolve("results.json")
+    resultFile.createFile().writeText(gson.toJson(reportSimulationResults(simulation)))
 }
 
-inline fun <reified Config> reportSimulationSetup(simulation: Simulation<Config>): String {
+fun <T> reportSimulationResults(simulation: Simulation<T>): Map<String, Any> {
+    val timeKeeper = TimeKeeper.getInstance()
+    val executionTime = Calendar.getInstance().timeInMillis - timeKeeper.simulationStartTime
+    val appLoopLatencies = getAppLoopLatencies(simulation.app.loops, timeKeeper)
+    val tupleExecutionLatencies = getTupleExecutionLatencies(timeKeeper)
+    val fogDeviceEnergyConsumptions = getFogDeviceEnergyConsumptions(simulation.environment.fogDevices)
+    val networkUsage = NetworkUsageMonitor.getNetworkUsage() / Config.MAX_SIMULATION_TIME
+    val migrationDelay = MigrationDelayMonitor.getMigrationDelay()
+
+    return mapOf(
+        "executionTime" to executionTime,
+        "networkUsage" to networkUsage,
+        "migrationDelay" to migrationDelay,
+        "appLoopLatencies" to appLoopLatencies,
+        "tupleExecutionLatencies" to tupleExecutionLatencies,
+        "fogDeviceEnergyConsumptions" to fogDeviceEnergyConsumptions
+    )
+}
+
+fun getAppLoopLatencies(appLoops: List<AppLoop>, timeKeeper: TimeKeeper) =
+    appLoops.map { appLoop ->
+        mapOf(
+            "appLoop" to appLoop.modules,
+            "avgLatency" to timeKeeper.loopIdToCurrentAverage[appLoop.loopId],
+            "latencies" to E2ELatencyMonitor.loopIdToLatencies[appLoop.loopId]
+        )
+    }
+
+fun getTupleExecutionLatencies(timeKeeper: TimeKeeper) =
+    timeKeeper.tupleTypeToAverageCpuTime.map { (tupleType, avgCpuTime) ->
+        mapOf(
+            "tuple" to tupleType,
+            "cpuTime" to avgCpuTime
+        )
+    }
+
+fun getFogDeviceEnergyConsumptions(fogDevices: Map<String, List<FogDevice>>) =
+    fogDevices.flatMap { (groupId, devices) ->
+        devices.map {
+            mapOf(
+                "group" to groupId,
+                "name" to it.name,
+                "energy" to it.energyConsumption
+            )
+        }
+    }
+
+inline fun <reified Config> reportSimulationSetup(simulation: Simulation<Config>): Map<String, Any> {
     val config = getGlobalSettings(simulation.config)
     val fogDeviceConfigs = getFogDeviceConfigs(simulation.environment.fogDevices)
     val networkConfig = getNetworkConfig(simulation.environment.fogDevices)
@@ -33,7 +92,7 @@ inline fun <reified Config> reportSimulationSetup(simulation: Simulation<Config>
     val actuatorConfigs = getActuatorConfigs(simulation.environment.actuators)
     val applicationConfig = getApplicationConfig(simulation.app)
 
-    val simulationSetup = mapOf(
+    return mapOf(
         "config" to config,
         "network" to networkConfig,
         "fogDevices" to fogDeviceConfigs,
@@ -41,10 +100,6 @@ inline fun <reified Config> reportSimulationSetup(simulation: Simulation<Config>
         "actuators" to actuatorConfigs,
         "application" to applicationConfig
     )
-
-    return GsonBuilder().setPrettyPrinting().create().run {
-        toJson(simulationSetup)
-    }
 }
 
 inline fun <reified T> getGlobalSettings(settings: T): Map<String, Any?> {
@@ -84,13 +139,13 @@ fun getActuatorConfigs(actuators: List<Actuator>) =
         ).toMap()
     }
 
-fun getNetworkConfig(fogDevices: MutableMap<String, MutableList<FogDevice>>) =
+fun getNetworkConfig(fogDevices: Map<String, List<FogDevice>>) =
     fogDevices.flatMap { (groupId, devices) ->
         devices.map {
             mapOf(
                 "id" to it.id,
                 "name" to it.name,
-                "parent" to it.parentId
+                "parent" to it.parentId,
                 "level" to it.level,
                 "group" to groupId,
             )

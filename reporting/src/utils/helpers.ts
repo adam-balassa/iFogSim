@@ -10,3 +10,12 @@ export function transposeConfigs<T extends Config>(configs: T[], columnName?: ke
         ]))
       }))
 }
+
+export function CDF(data: number[]): { x: number, y: number }[] {
+  const acc: { x: number, y: number }[] = []
+  data.sort((a, b) => a - b).reduce<number>((currentCount, nextValue) => {
+    acc.push({ x: nextValue, y: (currentCount + 1) / data.length })
+    return currentCount + 1;
+  }, 0)
+  return acc
+}

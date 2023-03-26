@@ -28,7 +28,7 @@ const moduleNodeIdMap = computed<Map<string, number>>(() => new Map(
 const nodes = computed(() => new DataSet(Array.from(moduleNodeIdMap.value).map(([key, value]) => ({
   id: value,
   label: key,
-  group: props.application.modules.find(m => m.name === key) ? 0 : 1
+  group: props.application.modules.find(m => m.name === key) ? '0' : '1'
 }))))
 
 const edges = computed(() => new DataSet(props.application.edges.map((edge, i) => ({
@@ -56,6 +56,7 @@ watch([networkContainer, moduleNodeIdMap], ([container]) => {
 .network {
     max-width:700px;
     cursor: all-scroll;
+    height: 300px;
     /*background-color: white;*/
     /*border-radius: 6px;*/
     /*border: 1px solid #dee2e6*/

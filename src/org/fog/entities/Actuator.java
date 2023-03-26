@@ -1,5 +1,6 @@
 package org.fog.entities;
 
+import fi.aalto.cs.extensions.E2ELatencyMonitor;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.core.SimEntity;
 import org.cloudbus.cloudsim.core.SimEvent;
@@ -75,6 +76,7 @@ public class Actuator extends SimEntity{
 				double newAverage = (currentAverage*currentCount + delay)/(currentCount+1);
 				TimeKeeper.getInstance().getLoopIdToCurrentAverage().put(loop.getLoopId(), newAverage);
 				TimeKeeper.getInstance().getLoopIdToCurrentNum().put(loop.getLoopId(), currentCount+1);
+				E2ELatencyMonitor.INSTANCE.registerE2ELatency(loop.getLoopId(), delay);
 				break;
 			}
 		}

@@ -18,10 +18,31 @@ export interface ExperimentSetup {
   sensors: (Config & { tuple: string })[];
 }
 
+export interface ExperimentResults {
+  executionTime: number;
+  networkUsage: number;
+  migrationDelay: number;
+  appLoopLatencies: {
+    appLoop: string[];
+    avgLatency: number;
+    latencies:  number[];
+  }[];
+  tupleExecutionLatencies: {
+    tuple: string;
+    cpuTime: number
+  }[];
+  fogDeviceEnergyConsumptions: {
+    group: string;
+    name: string;
+    energy: number;
+  }[]
+}
+
 export interface ExperimentDetails {
   app: string;
   experiment: string;
-  setup: ExperimentSetup
+  setup: ExperimentSetup;
+  results: ExperimentResults;
 }
 
 export type ExperimentListing = {

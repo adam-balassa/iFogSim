@@ -16,7 +16,7 @@
             <i class="pi pi-chart-bar mr-3"></i>
             <span>Results</span>
           </template>
-          <ExperimentSetup :setup="selectedExperiment.setup"/>
+          <ExperimentResults :results="selectedExperiment.results"/>
         </TabPanel>
       </TabView>
     </template>
@@ -28,6 +28,7 @@ import TabView from "primevue/tabview";
 import TabPanel from "primevue/tabpanel";
 import ExperimentSetup from "./experiment-setup/experiment-setup.vue";
 import useSelectedExperiment from "../use-selected-experiment";
+import ExperimentResults from "./experiment-results/experiment-results.vue";
 
 const { selectedExperiment } = useSelectedExperiment()
 

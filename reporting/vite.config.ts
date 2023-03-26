@@ -38,8 +38,9 @@ export default defineConfig({
 
           const folder = `${simulationDir}/${app}/${experiment}`
           const setup = JSON.parse(fs.readFileSync(`${folder}/setup.json`).toString())
+          const results = JSON.parse(fs.readFileSync(`${folder}/results.json`).toString())
 
-          return sendJson(res, { setup })
+          return sendJson(res, { setup, results })
         }
       }
     }
