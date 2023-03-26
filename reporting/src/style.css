@@ -1,0 +1,35 @@
+html {
+  font-size: 14px;
+}
+
+* {
+  font-family: var(--font-family);
+}
+
+.p-datatable {
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+  overflow: hidden;
+  box-sizing: content-box;
+}
+
+.p-datatable.p-datatable-sm .p-datatable-thead > tr > th  {
+  padding: .8rem;
+}
+
+
+.p-datatable.p-datatable-sm .p-datatable-tbody > tr > td  {
+  padding: .6rem .8rem;
+}
+
+.font-monospace {
+  font-family: Monospaced, monospace;
+}
+
+#app {
+  height: 100%;
+}
+
+*, :root {
+  --background-color: var(--surface-ground);
+}
