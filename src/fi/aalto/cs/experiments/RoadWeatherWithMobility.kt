@@ -154,7 +154,8 @@ class RoadWeatherWithMobility {
             uplinkLatency = 20.0,
             busyPower = 107.339,
             idlePower = 83.4333,
-            microservicesFogDeviceType = FCN
+            microservicesFogDeviceType = FCN,
+            broadcastResults = true
         )
     }
 

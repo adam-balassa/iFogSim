@@ -1,5 +1,6 @@
 package org.fog.entities;
 
+import fi.aalto.cs.extensions.ExecutionLevelMonitor;
 import org.apache.commons.math3.util.Pair;
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
@@ -683,7 +684,7 @@ public class FogDevice extends PowerDatacenter {
 		/*if(getName().equals("d-0") && tuple.getTupleType().equals("_SENSOR")){
 			System.out.println(++numClients);
 		}*/
-        Logger.debug(getName(), "Received tuple " + tuple.getCloudletId() + "with tupleType = " + tuple.getTupleType() + "\t| Source : " +
+        Logger.debug(getName(), "Received tuple " + tuple.getCloudletId() + " with tupleType = " + tuple.getTupleType() + "\t| Source : " +
                 CloudSim.getEntityName(ev.getSource()) + "|Dest : " + CloudSim.getEntityName(ev.getDestination()));
 		
 		/*if(CloudSim.getEntityName(ev.getSource()).equals("drone_0")||CloudSim.getEntityName(ev.getDestination()).equals("drone_0"))
@@ -788,8 +789,9 @@ public class FogDevice extends PowerDatacenter {
     }
 
     protected void executeTuple(SimEvent ev, String moduleName) {
-        Logger.debug(getName(), "Executing tuple on module " + moduleName);
         Tuple tuple = (Tuple) ev.getData();
+        Logger.debug(getName(), "Executing tuple " + tuple.getCloudletId() + " on module " + moduleName);
+        ExecutionLevelMonitor.INSTANCE.registerTupleExecution(tuple.getTupleType(), getLevel());
 
         AppModule module = getModuleByName(moduleName);
 

@@ -1,5 +1,6 @@
 package fi.aalto.cs.utils
 
+import fi.aalto.cs.extensions.StochasticAppEdge
 import fi.aalto.cs.utils.MicroservicePlacementStrategy.ClusteredPlacement
 import org.cloudbus.cloudsim.Pe
 import org.cloudbus.cloudsim.power.PowerHost
@@ -72,7 +73,9 @@ fun <T>Simulation<T>.appModule(
  * @param tupleType The tuple's name that travels on the AppEdge
  * @param direction Up/Down/Actuator: which port should a FogDevice use to forward the tuple
  * @param cpuLength CPU power needed to process the tuple in Million instructions
+ * @param cpuLengthGenerator Indicates that the tuple's CPU-length should be a stochastic value determined by the generator
  * @param dataSize The size of the tuple in MB
+ * @param dataSizeGenerator Indicates that the tuple's data size should be a stochastic value determined by the generator
  * @param appEdgeType Indicates whether the edge is between modules or sensors or actuators
  */
 fun <T>Simulation<T>.appEdge(
@@ -80,11 +83,20 @@ fun <T>Simulation<T>.appEdge(
     destination: ModuleType,
     tupleType: TupleType,
     direction: TupleDirection,
-    cpuLength: Double,
+    cpuLength: Double? = null,
+    cpuLengthGenerator: (() -> Double)? = null,
     dataSize: Double = 500.0,
+    dataSizeGenerator: (() -> Double)? = null,
     appEdgeType: AppEdgeType = AppEdgeType.InterModule,
 ) {
-    val edge = AppEdge(source.name, destination.name, cpuLength, dataSize, tupleType.name, direction.id, appEdgeType.id)
+    require(cpuLengthGenerator != null || cpuLength != null) { "Either parameters cpuLengthGenerator or cpuLength are mandatory" }
+    val edge = if (cpuLengthGenerator != null) {
+        StochasticAppEdge(source.name, destination.name, cpuLengthGenerator, dataSizeGenerator ?: { dataSize }, tupleType.name, direction.id, appEdgeType.id)
+    } else if (cpuLength != null) {
+        AppEdge(source.name, destination.name, cpuLength, dataSize, tupleType.name, direction.id, appEdgeType.id)
+    } else {
+        return
+    }
     app.edges.add(edge)
     app.edgeMap[tupleType.name] = edge
 }
@@ -131,6 +143,7 @@ fun <T>Simulation<T>.fogDevice(
     costRatePerBandwidth: Double = 0.0,
     costRatePerStorage: Double = 0.001,
     microservicesFogDeviceType: MicroservicesFogDeviceType? = null,
+    broadcastResults: Boolean = false
 ): FogDevice {
     val processingElements = listOf(Pe(0, PeProvisionerOverbooking(mips.toDouble())))
     val host = PowerHost(
@@ -174,7 +187,9 @@ fun <T>Simulation<T>.fogDevice(
             uplinkLatency,
             costRatePerMips,
             microservicesFogDeviceType.typeName
-        )
+        ).also {
+            it.broadcastResults = broadcastResults
+        }
     }.also {
         it.parentId = parentId ?: NOT_SET
         it.level = level.id

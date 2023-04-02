@@ -1,5 +1,6 @@
 package org.fog.entities;
 
+import fi.aalto.cs.extensions.BroadcastResultsKt;
 import org.apache.commons.math3.util.Pair;
 import org.cloudbus.cloudsim.Storage;
 import org.cloudbus.cloudsim.Vm;
@@ -16,6 +17,8 @@ import org.json.simple.JSONObject;
 
 import java.util.*;
 
+import static fi.aalto.cs.extensions.BroadcastResultsKt.copyTuple;
+
 /**
  * Created by Samodha Pallewatta
  */
@@ -27,6 +30,7 @@ public class MicroserviceFogDevice extends FogDevice {
      * thus for security resons client devices are not used for that)
      */
     protected String deviceType = null;
+    protected boolean broadcastResults = false;
     public static final String CLIENT = "client";
     public static final String FCN = "fcn"; // fog computation node
     public static final String FON = "fon"; // fog orchestration node
@@ -156,7 +160,7 @@ public class MicroserviceFogDevice extends FogDevice {
 
         Tuple tuple = (Tuple) ev.getData();
 
-        Logger.debug(getName(), "Received tuple " + tuple.getCloudletId() + "with tupleType = " + tuple.getTupleType() + "\t| Source : " +
+        Logger.debug(getName(), "Received tuple " + tuple.getCloudletId() + " with tupleType = " + tuple.getTupleType() + "\t| Source : " +
                 CloudSim.getEntityName(ev.getSource()) + "|Dest : " + CloudSim.getEntityName(ev.getDestination()));
 
         if (deviceType.equals(MicroserviceFogDevice.CLOUD)) {
@@ -226,6 +230,11 @@ public class MicroserviceFogDevice extends FogDevice {
             updateTimingsOnReceipt(tuple);
 
             executeTuple(ev, tuple.getDestModuleName());
+        } else if (tuple.getDirection() == Tuple.DOWN && getBroadcastResults()) {
+            Logger.debug(getName(), "Broadcasting tuple " + tuple.getCloudletId() + " to every children");
+            for (int childId : getChildrenIds()) {
+                sendDown(copyTuple(tuple, childId), childId);
+            }
         } else {
             if (tuple.getDestinationDeviceId() != -1) {
                 int nextDeviceToSend = routingTable.get(tuple.getDestinationDeviceId());
@@ -237,7 +246,6 @@ public class MicroserviceFogDevice extends FogDevice {
                     sendToCluster(tuple, nextDeviceToSend);
                 else {
                     Logger.error("Routing error", "Routing table of " + getName() + "does not contain next device for destination Id" + tuple.getDestinationDeviceId());
-
                 }
             } else {
                 if (tuple.getDirection() == Tuple.DOWN) {
@@ -672,5 +680,13 @@ public class MicroserviceFogDevice extends FogDevice {
 
     public void addMonitoredDevice(FogDevice fogDevice) {
         controllerComponent.addMonitoredDevice(fogDevice);
+    }
+
+    public boolean getBroadcastResults() {
+        return this.broadcastResults;
+    }
+
+    public void setBroadcastResults(boolean broadcastResults) {
+        this.broadcastResults = broadcastResults;
     }
 }

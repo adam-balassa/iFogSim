@@ -2,6 +2,8 @@ package fi.aalto.cs.utils
 
 import com.google.gson.GsonBuilder
 import fi.aalto.cs.extensions.E2ELatencyMonitor
+import fi.aalto.cs.extensions.ExecutionLevelMonitor
+import fi.aalto.cs.extensions.StochasticAppEdge
 import org.cloudbus.cloudsim.Pe
 import org.fog.application.AppLoop
 import org.fog.application.Application
@@ -57,7 +59,8 @@ fun <T> reportSimulationResults(simulation: Simulation<T>): Map<String, Any> {
         "migrationDelay" to migrationDelay,
         "appLoopLatencies" to appLoopLatencies,
         "tupleExecutionLatencies" to tupleExecutionLatencies,
-        "fogDeviceEnergyConsumptions" to fogDeviceEnergyConsumptions
+        "fogDeviceEnergyConsumptions" to fogDeviceEnergyConsumptions,
+        "executionLevels" to ExecutionLevelMonitor.tupleTypeToLatencyMap,
     )
 }
 
@@ -97,14 +100,19 @@ inline fun <reified Config> reportSimulationSetup(simulation: Simulation<Config>
     val actuatorConfigs = getActuatorConfigs(simulation.environment.actuators)
     val applicationConfig = getApplicationConfig(simulation.app)
 
-    return mapOf(
+    return listOfNotNull(
         "config" to config,
         "network" to networkConfig,
         "fogDevices" to fogDeviceConfigs,
         "sensors" to sensorConfigs,
         "actuators" to actuatorConfigs,
-        "application" to applicationConfig
-    )
+        "application" to applicationConfig,
+        if (StochasticAppEdge.tupleTypeToCpuLength.isNotEmpty()) {
+            "tupleTypeToCpuLength" to StochasticAppEdge.tupleTypeToCpuLength
+        } else {
+            null
+        }
+    ).toMap()
 }
 
 inline fun <reified T> getGlobalSettings(settings: T): Map<String, Any?> {

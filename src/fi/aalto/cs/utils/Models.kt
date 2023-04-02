@@ -11,7 +11,10 @@ enum class MicroservicesFogDeviceType(val typeName: String) {
     FCN("fcn"), FON("fon"), Client("client"), Cloud("cloud")
 }
 enum class FogDeviceLevel(val id: Int) {
-    Cloud(0), Proxy(1), Gateway(2), User(3)
+    Cloud(0), Proxy(1), Gateway(2), User(3);
+    companion object {
+        fun byId(id: Int) = values().find { it.id == id }
+    }
 }
 
 enum class TupleDirection(val id: Int) {

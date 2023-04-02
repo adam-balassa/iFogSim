@@ -16,7 +16,7 @@
             <i class="pi pi-chart-bar mr-3"></i>
             <span>Results</span>
           </template>
-          <ExperimentResults :results="selectedExperiment.results"/>
+          <ExperimentResults :results="selectedExperiment.results" :setup="selectedExperiment.setup"/>
         </TabPanel>
       </TabView>
     </template>

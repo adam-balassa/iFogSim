@@ -19,6 +19,7 @@
       <ApplicationGraph :application="setup.application" class="pt-3"/>
       <AppModulesTable :app-modules="setup.application.modules" class="pt-3"/>
       <AppEdgeTable :app-edges="setup.application.edges" class="pt-3"/>
+      <TupleCpuLengthChart v-if="setup.tupleTypeToCpuLength" :tuple-type-cpu-length="setup.tupleTypeToCpuLength" class="pt-3"/>
     </template>
   </div>
 </template>
@@ -33,8 +34,9 @@ import ActuatorsTable from "./network/actuators-table.vue";
 import ApplicationGraph from "./application/application-graph.vue";
 import AppModulesTable from "./application/app-modules-table.vue";
 import AppEdgeTable from "./application/app-edge-table.vue";
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import NetworkGraph from "./network/network-graph.vue";
+import TupleCpuLengthChart from "./application/tuple-cpu-length-chart.vue";
 
 defineProps<{
   setup: ExperimentDetails['setup']

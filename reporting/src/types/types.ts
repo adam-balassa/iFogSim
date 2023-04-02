@@ -16,6 +16,7 @@ export interface ExperimentSetup {
     name: string;
   }[]
   sensors: (Config & { tuple: string })[];
+  tupleTypeToCpuLength?: { [tupleType: string]: number[] }
 }
 
 export interface ExperimentResults {
@@ -35,7 +36,10 @@ export interface ExperimentResults {
     group: string;
     name: string;
     energy: number;
-  }[]
+  }[];
+  executionLevels?: {
+    [tupleType: string]: string[]
+  }
 }
 
 export interface ExperimentDetails {

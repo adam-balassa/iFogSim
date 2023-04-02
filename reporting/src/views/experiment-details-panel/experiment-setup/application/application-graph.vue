@@ -44,7 +44,7 @@ const edges = computed(() => new DataSet(props.application.edges.map((edge, i) =
   }
 }))))
 
-watch([networkContainer, moduleNodeIdMap], ([container]) => {
+watch([networkContainer, nodes], ([container]) => {
   if (container) {
     new Network(container, { edges: edges.value, nodes: nodes.value }, {})
   }
@@ -57,8 +57,6 @@ watch([networkContainer, moduleNodeIdMap], ([container]) => {
     max-width:700px;
     cursor: all-scroll;
     height: 300px;
-    /*background-color: white;*/
-    /*border-radius: 6px;*/
-    /*border: 1px solid #dee2e6*/
+    width: 100%;
 }
 </style>
