@@ -20,6 +20,7 @@ import org.fog.mobilitydata.Clustering;
 import org.fog.policy.AppModuleAllocationPolicy;
 import org.fog.scheduler.StreamOperatorScheduler;
 import org.fog.utils.*;
+import org.jetbrains.annotations.Nullable;
 import org.json.simple.JSONObject;
 
 import java.util.*;
@@ -722,16 +723,8 @@ public class FogDevice extends PowerDatacenter {
 
         if (appToModulesMap.containsKey(tuple.getAppId())) {
             if (appToModulesMap.get(tuple.getAppId()).contains(tuple.getDestModuleName())) {
-                int vmId = -1;
-                for (Vm vm : getHost().getVmList()) {
-                    if (((AppModule) vm).getName().equals(tuple.getDestModuleName()))
-                        vmId = vm.getId();
-                }
-                if (vmId < 0
-                        || (tuple.getModuleCopyMap().containsKey(tuple.getDestModuleName()) &&
-                        tuple.getModuleCopyMap().get(tuple.getDestModuleName()) != vmId)) {
-                    return;
-                }
+                Integer vmId = getVmForTuple(tuple);
+                if (vmId == null) return;
                 tuple.setVmId(vmId);
                 //Logger.error(getName(), "Executing tuple for operator " + moduleName);
 
@@ -756,6 +749,21 @@ public class FogDevice extends PowerDatacenter {
                     sendDown(tuple, childId);
             }
         }
+    }
+
+    @Nullable
+    protected Integer getVmForTuple(Tuple tuple) {
+        int vmId = -1;
+        for (Vm vm : getHost().getVmList()) {
+            if (((AppModule) vm).getName().equals(tuple.getDestModuleName()))
+                vmId = vm.getId();
+        }
+        if (vmId < 0
+                || (tuple.getModuleCopyMap().containsKey(tuple.getDestModuleName()) &&
+                tuple.getModuleCopyMap().get(tuple.getDestModuleName()) != vmId)) {
+            return null;
+        }
+        return vmId;
     }
 
     protected void updateTimingsOnReceipt(Tuple tuple) {

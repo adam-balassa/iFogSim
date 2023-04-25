@@ -69,6 +69,7 @@ public class ClusteredMicroservicePlacementLogic implements MicroservicePlacemen
         PlacementLogicOutput placement = generatePlacementMap();
         updateResources(resourceAvailability);
         postProcessing();
+        Logger.debug("Placement", placement.perDevice.toString());
         return placement;
     }
 

@@ -1,10 +1,11 @@
 package fi.aalto.cs.extensions
 
 import org.fog.entities.Tuple
+import org.fog.utils.FogUtils.generateTupleId
 
 fun copyTuple(inputTuple: Tuple, destinationDeviceId: Int) = Tuple(
     inputTuple.appId,
-    inputTuple.cloudletId,
+    generateTupleId(),
     inputTuple.direction,
     inputTuple.cloudletLength,
     inputTuple.numberOfPes,

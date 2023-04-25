@@ -152,8 +152,28 @@ fun getActuatorConfigs(actuators: List<Actuator>) =
         ).toMap()
     }
 
-fun getNetworkConfig(fogDevices: Map<String, List<FogDevice>>) =
-    fogDevices.flatMap { (groupId, devices) ->
+fun getNetworkConfig(fogDevices: Map<String, List<FogDevice>>): List<Any> {
+    val devicesMap = fogDevices
+        .flatMap { it.value }
+        .associateBy { it.id }
+        .toMutableMap()
+    val deviceToClusterId = mutableMapOf<Int, Int>()
+    var clusterId = 0
+    while (devicesMap.isNotEmpty()) {
+        val device = devicesMap.values.first()
+        if (device.clusterMembers.isEmpty()) {
+            deviceToClusterId[device.id] = -1
+        } else {
+            deviceToClusterId[device.id] = clusterId
+            device.clusterMembers.forEach {
+                deviceToClusterId[it] = clusterId
+                devicesMap.remove(it)
+            }
+            ++clusterId
+        }
+        devicesMap.remove(device.id)
+    }
+    return fogDevices.flatMap { (groupId, devices) ->
         devices.map {
             mapOf(
                 "id" to it.id,
@@ -161,9 +181,11 @@ fun getNetworkConfig(fogDevices: Map<String, List<FogDevice>>) =
                 "parent" to it.parentId,
                 "level" to it.level,
                 "group" to groupId,
+                "cluster" to deviceToClusterId[it.id]
             )
         }
     }
+}
 
 fun getFogDeviceConfigs(fogDevices: Map<String, List<FogDevice>>) =
     fogDevices.map { (levelId, devices) ->
@@ -192,7 +214,8 @@ fun getConfigForFogDevice(levelId: String, device: FogDevice): MutableMap<String
         "costRatePerMemory" to device.characteristics.costPerMem,
         "costRatePerBandwidth" to device.characteristics.costPerBw,
         "costRatePerStorage" to device.characteristics.costPerStorage,
-        (device as? MicroserviceFogDevice)?.let { "microservicesFogDeviceType" to it.deviceType }
+        (device as? MicroserviceFogDevice)?.let { "microservicesFogDeviceType" to it.deviceType },
+        (device as? MicroserviceFogDevice)?.let { "broadcast" to it.broadcastResults }
     ).toMap().toMutableMap()
 
 fun getApplicationConfig(app: Application) =

@@ -14,6 +14,7 @@ export interface ExperimentSetup {
     level: number | string;
     group?: string;
     name: string;
+    cluster?: number;
   }[]
   sensors: (Config & { tuple: string })[];
   tupleTypeToCpuLength?: { [tupleType: string]: number[] }

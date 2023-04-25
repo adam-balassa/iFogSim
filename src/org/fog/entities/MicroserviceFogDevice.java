@@ -115,7 +115,7 @@ public class MicroserviceFogDevice extends FogDevice {
 
     public void addPlacementRequest(PlacementRequest pr) {
         placementRequests.add(pr);
-        if (MicroservicePlacementConfig.PR_PROCESSING_MODE == MicroservicePlacementConfig.SEQUENTIAL && placementRequests.size() == 1)
+        if (MicroservicePlacementConfig.PR_PROCESSING_MODE.equals(MicroservicePlacementConfig.SEQUENTIAL) && placementRequests.size() == 1)
             sendNow(getId(), FogEvents.PROCESS_PRS);
     }
 
@@ -214,16 +214,8 @@ public class MicroserviceFogDevice extends FogDevice {
         }
 
         if (tuple.getDestinationDeviceId() == getId()) {
-            int vmId = -1;
-            for (Vm vm : getHost().getVmList()) {
-                if (((AppModule) vm).getName().equals(tuple.getDestModuleName()))
-                    vmId = vm.getId();
-            }
-            if (vmId < 0
-                    || (tuple.getModuleCopyMap().containsKey(tuple.getDestModuleName()) &&
-                    tuple.getModuleCopyMap().get(tuple.getDestModuleName()) != vmId)) {
-                return;
-            }
+            Integer vmId = getVmForTuple(tuple);
+            if (vmId == null) return;
             tuple.setVmId(vmId);
             tuple.addToTraversedMicroservices(getId(), tuple.getDestModuleName());
 
@@ -251,16 +243,8 @@ public class MicroserviceFogDevice extends FogDevice {
                 if (tuple.getDirection() == Tuple.DOWN) {
                     if (appToModulesMap.containsKey(tuple.getAppId())) {
                         if (appToModulesMap.get(tuple.getAppId()).contains(tuple.getDestModuleName())) {
-                            int vmId = -1;
-                            for (Vm vm : getHost().getVmList()) {
-                                if (((AppModule) vm).getName().equals(tuple.getDestModuleName()))
-                                    vmId = vm.getId();
-                            }
-                            if (vmId < 0
-                                    || (tuple.getModuleCopyMap().containsKey(tuple.getDestModuleName()) &&
-                                    tuple.getModuleCopyMap().get(tuple.getDestModuleName()) != vmId)) {
-                                return;
-                            }
+                            Integer vmId = getVmForTuple(tuple);
+                            if (vmId == null) return;
                             tuple.setVmId(vmId);
                             //Logger.error(getName(), "Executing tuple for operator " + moduleName);
 
@@ -288,7 +272,7 @@ public class MicroserviceFogDevice extends FogDevice {
      * Both cloud and FON participates in placement process
      */
     public void initializeController(LoadBalancer loadBalancer, MicroservicePlacementLogic mPlacement, Map<Integer, Map<String, Double>> resourceAvailability, Map<String, Application> applications, List<FogDevice> fogDevices) {
-        if (getDeviceType() == MicroserviceFogDevice.FON || getDeviceType() == MicroserviceFogDevice.CLOUD) {
+        if (getDeviceType().equals(MicroserviceFogDevice.FON) || getDeviceType().equals(MicroserviceFogDevice.CLOUD)) {
             controllerComponent = new ControllerComponent(getId(), loadBalancer, mPlacement, resourceAvailability, applications, fogDevices);
         } else
             Logger.error("Controller init failed", "FON controller initialized for device " + getName() + " of type " + getDeviceType());
@@ -298,7 +282,7 @@ public class MicroserviceFogDevice extends FogDevice {
      * FCN and Client devices
      */
     public void initializeController(LoadBalancer loadBalancer) {
-        if (getDeviceType() != MicroserviceFogDevice.FON) {
+        if (!getDeviceType().equals(MicroserviceFogDevice.FON)) {
             controllerComponent = new ControllerComponent(getId(), loadBalancer);
             controllerComponent.updateResources(getId(), ControllerComponent.CPU, getHost().getTotalMips());
             controllerComponent.updateResources(getId(), ControllerComponent.RAM, getHost().getRam());
@@ -319,7 +303,7 @@ public class MicroserviceFogDevice extends FogDevice {
     }
 
     protected void processPlacementRequests() {
-        if (MicroservicePlacementConfig.PR_PROCESSING_MODE == MicroservicePlacementConfig.PERIODIC && placementRequests.size() == 0) {
+        if (MicroservicePlacementConfig.PR_PROCESSING_MODE.equals(MicroservicePlacementConfig.PERIODIC) && placementRequests.size() == 0) {
             send(getId(), MicroservicePlacementConfig.PLACEMENT_INTERVAL, FogEvents.PROCESS_PRS);
             return;
         }
@@ -327,10 +311,10 @@ public class MicroserviceFogDevice extends FogDevice {
 
         List<PlacementRequest> placementRequests = new ArrayList<>();
 
-        if (MicroservicePlacementConfig.PR_PROCESSING_MODE == MicroservicePlacementConfig.PERIODIC) {
+        if (MicroservicePlacementConfig.PR_PROCESSING_MODE.equals(MicroservicePlacementConfig.PERIODIC)) {
             placementRequests.addAll(this.placementRequests);
             this.placementRequests.clear();
-        } else if (MicroservicePlacementConfig.PR_PROCESSING_MODE == MicroservicePlacementConfig.SEQUENTIAL) {
+        } else if (MicroservicePlacementConfig.PR_PROCESSING_MODE.equals(MicroservicePlacementConfig.SEQUENTIAL)) {
             placementRequests.add(this.placementRequests.get(0));
             this.placementRequests.remove(0);
         }
@@ -351,7 +335,7 @@ public class MicroserviceFogDevice extends FogDevice {
                 fogDeviceCount++;
             placementString.append(CloudSim.getEntity(deviceID).getName() + " : ");
             for (Application app : perDevice.get(deviceID).keySet()) {
-                if (MicroservicePlacementConfig.SIMULATION_MODE == "STATIC") {
+                if (MicroservicePlacementConfig.SIMULATION_MODE.equals("STATIC")) {
                     //ACTIVE_APP_UPDATE
                     sendNow(deviceID, FogEvents.ACTIVE_APP_UPDATE, app);
                     //APP_SUBMIT
@@ -365,7 +349,7 @@ public class MicroserviceFogDevice extends FogDevice {
                     }
                 }
             }
-            if (MicroservicePlacementConfig.SIMULATION_MODE == "DYNAMIC") {
+            if (MicroservicePlacementConfig.SIMULATION_MODE.equals("DYNAMIC")) {
                 //todo
                 transmitModulesToDeply(deviceID, perDevice.get(deviceID));
             }
@@ -374,9 +358,9 @@ public class MicroserviceFogDevice extends FogDevice {
         System.out.println(placementString.toString());
         for (int clientDevice : serviceDicovery.keySet()) {
             for (Pair serviceData : serviceDicovery.get(clientDevice)) {
-                if (MicroservicePlacementConfig.SIMULATION_MODE == "DYNAMIC") {
+                if (MicroservicePlacementConfig.SIMULATION_MODE.equals("DYNAMIC")) {
                     transmitServiceDiscoveryData(clientDevice, serviceData);
-                } else if (MicroservicePlacementConfig.SIMULATION_MODE == "STATIC") {
+                } else if (MicroservicePlacementConfig.SIMULATION_MODE.equals("STATIC")) {
                     JSONObject serviceDiscoveryAdd = new JSONObject();
                     serviceDiscoveryAdd.put("service data", serviceData);
                     serviceDiscoveryAdd.put("action", "ADD");
@@ -387,18 +371,18 @@ public class MicroserviceFogDevice extends FogDevice {
 
         for (PlacementRequest pr : placementRequestStatus.keySet()) {
             if (placementRequestStatus.get(pr) != -1) {
-                if (MicroservicePlacementConfig.SIMULATION_MODE == "DYNAMIC")
+                if (MicroservicePlacementConfig.SIMULATION_MODE.equals("DYNAMIC"))
                     transmitPR(pr, placementRequestStatus.get(pr));
 
-                else if (MicroservicePlacementConfig.SIMULATION_MODE == "STATIC")
+                else if (MicroservicePlacementConfig.SIMULATION_MODE.equals("STATIC"))
                     sendNow(placementRequestStatus.get(pr), FogEvents.RECEIVE_PR, pr);
 
             }
         }
 
-        if (MicroservicePlacementConfig.PR_PROCESSING_MODE == MicroservicePlacementConfig.PERIODIC)
+        if (MicroservicePlacementConfig.PR_PROCESSING_MODE.equals(MicroservicePlacementConfig.PERIODIC))
             send(getId(), MicroservicePlacementConfig.PLACEMENT_INTERVAL, FogEvents.PROCESS_PRS);
-        else if (MicroservicePlacementConfig.PR_PROCESSING_MODE == MicroservicePlacementConfig.SEQUENTIAL && !this.placementRequests.isEmpty())
+        else if (MicroservicePlacementConfig.PR_PROCESSING_MODE.equals(MicroservicePlacementConfig.SEQUENTIAL) && !this.placementRequests.isEmpty())
             sendNow(getId(), FogEvents.PROCESS_PRS);
     }
 
@@ -585,9 +569,9 @@ public class MicroserviceFogDevice extends FogDevice {
             for (ModuleLaunchConfig moduleLaunchConfig : deployementSet.get(app)) {
                 String microserviceName = moduleLaunchConfig.getModule().getName();
                 //LAUNCH_MODULE
-                if (MicroservicePlacementConfig.SIMULATION_MODE == "STATIC") {
+                if (MicroservicePlacementConfig.SIMULATION_MODE.equals("STATIC")) {
                     sendNow(getId(), FogEvents.LAUNCH_MODULE, new AppModule(app.getModuleByName(microserviceName)));
-                } else if (MicroservicePlacementConfig.SIMULATION_MODE == "DYNAMIC") {
+                } else if (MicroservicePlacementConfig.SIMULATION_MODE.equals("DYNAMIC")) {
                     send(getId(), MicroservicePlacementConfig.MODULE_DEPLOYMENT_TIME, FogEvents.LAUNCH_MODULE, new AppModule(app.getModuleByName(microserviceName)));
                 }
                 sendNow(getId(), FogEvents.LAUNCH_MODULE_INSTANCE, moduleLaunchConfig);
@@ -616,7 +600,7 @@ public class MicroserviceFogDevice extends FogDevice {
         }
 
         // in FONs resource availability is updated by placement algorithm
-        if (getDeviceType() != FON) {
+        if (!getDeviceType().equals(FON)) {
             double mips = getControllerComponent().getAvailableResource(getId(), ControllerComponent.CPU) - (config.getModule().getMips() * config.getInstanceCount());
             getControllerComponent().updateResources(getId(), ControllerComponent.CPU, mips);
             double ram = getControllerComponent().getAvailableResource(getId(), ControllerComponent.RAM) - (config.getModule().getRam() * config.getInstanceCount());

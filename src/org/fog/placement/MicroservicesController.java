@@ -134,9 +134,9 @@ public class MicroservicesController extends SimEntity {
     }
 
     public void startEntity() {
-        if (MicroservicePlacementConfig.SIMULATION_MODE == "STATIC")
+        if (MicroservicePlacementConfig.SIMULATION_MODE.equals("STATIC"))
             initiatePlacementRequestProcessing();
-        if (MicroservicePlacementConfig.SIMULATION_MODE == "DYNAMIC")
+        if (MicroservicePlacementConfig.SIMULATION_MODE.equals("DYNAMIC"))
             initiatePlacementRequestProcessingDynamic();
 
         if (MicroservicePlacementConfig.ENABLE_RESOURCE_DATA_SHARING) {
@@ -167,9 +167,9 @@ public class MicroservicesController extends SimEntity {
             } else
                 send(p.getGatewayDeviceId(), placementRequestDelayMap.get(p), FogEvents.TRANSMIT_PR, p);
         }
-        if (MicroservicePlacementConfig.PR_PROCESSING_MODE == MicroservicePlacementConfig.PERIODIC) {
+        if (MicroservicePlacementConfig.PR_PROCESSING_MODE.equals(MicroservicePlacementConfig.PERIODIC)) {
             for (FogDevice f : fogDevices) {
-                if (((MicroserviceFogDevice) f).getDeviceType() == MicroserviceFogDevice.FON) {
+                if (((MicroserviceFogDevice) f).getDeviceType().equals(MicroserviceFogDevice.FON)) {
                     sendNow(f.getId(), FogEvents.PROCESS_PRS);
                 }
             }
@@ -185,9 +185,9 @@ public class MicroservicesController extends SimEntity {
             } else
                 send(getId(), placementRequestDelayMap.get(p), FogEvents.TRANSMIT_PR, p);
         }
-        if (MicroservicePlacementConfig.PR_PROCESSING_MODE == MicroservicePlacementConfig.PERIODIC) {
+        if (MicroservicePlacementConfig.PR_PROCESSING_MODE.equals(MicroservicePlacementConfig.PERIODIC)) {
             for (FogDevice f : fogDevices) {
-                if (((MicroserviceFogDevice) f).getDeviceType() == MicroserviceFogDevice.FON) {
+                if (((MicroserviceFogDevice) f).getDeviceType().equals(MicroserviceFogDevice.FON)) {
                     sendNow(f.getId(), FogEvents.PROCESS_PRS);
                 }
             }

@@ -21,7 +21,7 @@ const networkContainer = ref<HTMLDivElement>()
 
 const nodes = computed(() => new DataSet(props.network.map(el => ({
   id: el.id,
-  group: el.group ?? el.level.toString(),
+  group: el.cluster?.toString() ?? el.group ?? el.level.toString(),
   label: el.name,
   ...(Number.isInteger(el.level) ? { level: Number(el.level) } : {})
 }))))

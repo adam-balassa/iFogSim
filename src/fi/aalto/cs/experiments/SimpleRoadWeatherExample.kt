@@ -16,7 +16,7 @@ import org.fog.utils.distribution.DeterministicDistribution
 
 fun main() {
     // enableDebugLogging()
-    // enableReporting()
+    enableReporting()
     SimpleRoadWeatherExample().run()
 }
 
@@ -173,7 +173,7 @@ class SimpleRoadWeatherExample {
             FiveGRadioUnit,
             level = Gateway,
             parentId = parentNodeId,
-            mips = 2500,
+            mips = 4000,
             ram = 2500,
             uplinkLatency = latency,
             busyPower = 107.339,

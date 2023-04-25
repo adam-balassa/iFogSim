@@ -13,7 +13,7 @@ import org.fog.utils.distribution.DeterministicDistribution
 
 fun main() {
     // enableDebugLogging()
-    enableReporting()
+    // enableReporting()
     RoadWeatherWithMobility().run()
 }
 

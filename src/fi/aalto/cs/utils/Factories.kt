@@ -114,8 +114,8 @@ fun <T>Simulation<T>.appEdge(
  * @param clusterLinkBandwidth Bandwidth between cluster nodes in Mbps
  * @param uplinkLatency Latency of the up-link connection in milliseconds
  * @param schedulingInterval How often should the VM scheduling logic run in the host (ms)
- * @param busyPower Power consumption when the device is performing computation in MJ
- * @param idlePower Power consumption when the device is idle in MJ
+ * @param busyPower Power consumption when the device is performing computation in MJ/s
+ * @param idlePower Power consumption when the device is idle in MJ/s
  * @param costRatePerMips The cost of consuming 1 million instructions per second
  * @param costRatePerSecond The cost of running the host for 1 second
  * @param costRatePerBandwidth The cost of 1 Mbps
@@ -135,7 +135,7 @@ fun <T>Simulation<T>.fogDevice(
     clusterLinkBandwidth: Long = 10_000,
     uplinkLatency: Double = 0.0, // ms
     schedulingInterval: Double = 10.0,
-    busyPower: Double = 0.0, // MJ
+    busyPower: Double = 0.0, // MJ/s
     idlePower: Double = 0.0,
     costRatePerMips: Double = 0.0, // $
     costRatePerSecond: Double = 3.0,
