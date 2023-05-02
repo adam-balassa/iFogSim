@@ -47,9 +47,9 @@ inline fun <reified Config> reportSimulation(simulation: Simulation<Config>, roo
 fun <T> reportSimulationResults(simulation: Simulation<T>): Map<String, Any> {
     val timeKeeper = TimeKeeper.getInstance()
     val executionTime = Calendar.getInstance().timeInMillis - timeKeeper.simulationStartTime
-    val appLoopLatencies = getAppLoopLatencies(simulation.app.loops, timeKeeper)
+    val appLoopLatencies = getAppLoopLatencies(simulation.workload.values.first().application.loops, timeKeeper)
     val tupleExecutionLatencies = getTupleExecutionLatencies(timeKeeper)
-    val fogDeviceEnergyConsumptions = getFogDeviceEnergyConsumptions(simulation.environment.fogDevices)
+    val fogDeviceEnergyConsumptions = getFogDeviceEnergyConsumptions(simulation.network.fogDevices)
     val networkUsage = NetworkUsageMonitor.getNetworkUsage() / Config.MAX_SIMULATION_TIME
     val migrationDelay = MigrationDelayMonitor.getMigrationDelay()
 
@@ -94,11 +94,11 @@ fun getFogDeviceEnergyConsumptions(fogDevices: Map<String, List<FogDevice>>) =
 
 inline fun <reified Config> reportSimulationSetup(simulation: Simulation<Config>): Map<String, Any> {
     val config = getGlobalSettings(simulation.config)
-    val fogDeviceConfigs = getFogDeviceConfigs(simulation.environment.fogDevices)
-    val networkConfig = getNetworkConfig(simulation.environment.fogDevices)
-    val sensorConfigs = getSensorConfigs(simulation.environment.sensors)
-    val actuatorConfigs = getActuatorConfigs(simulation.environment.actuators)
-    val applicationConfig = getApplicationConfig(simulation.app)
+    val fogDeviceConfigs = getFogDeviceConfigs(simulation.network.fogDevices)
+    val networkConfig = getNetworkConfig(simulation.network.fogDevices)
+    val sensorConfigs = getSensorConfigs(simulation.workload.values.first().sensors)
+    val actuatorConfigs = getActuatorConfigs(simulation.workload.values.first().actuators)
+    val applicationConfig = getApplicationConfig(simulation.workload.values.first().application)
 
     return listOfNotNull(
         "config" to config,

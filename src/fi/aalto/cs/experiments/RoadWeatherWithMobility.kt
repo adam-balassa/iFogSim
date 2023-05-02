@@ -66,39 +66,41 @@ class RoadWeatherWithMobility {
     }
 
     private fun initializeApplication() = simulation.apply {
-        appModule(
-            Modules.DriverAssistanceSystem,
-            ram = 128,
-            mips = 100.0,
-            storage = 100,
-            selectivityMapping = mapOf(
-                forwarding(NIRCamera to Tuples.NIRCameraImage),
-                forwarding(Tuples.RoadWeatherConditions to Tuples.EstimatedBreakingDistance, 0.2)
+        addApplication("", "CHM").apply {
+            addAppModule(
+                Modules.DriverAssistanceSystem,
+                ram = 128,
+                mips = 100.0,
+                storage = 100,
+                selectivityMapping = mapOf(
+                    forwarding(NIRCamera to Tuples.NIRCameraImage),
+                    forwarding(Tuples.RoadWeatherConditions to Tuples.EstimatedBreakingDistance, 0.2)
+                )
             )
-        )
-        appModule(
-            Modules.RoadWeatherClassification,
-            ram = 1024,
-            mips = 2500.0,
-            storage = 200,
-            selectivityMapping = mapOf(
-                forwarding(Tuples.NIRCameraImage to Tuples.RoadWeatherConditions),
+            addAppModule(
+                Modules.RoadWeatherClassification,
+                ram = 1024,
+                mips = 2500.0,
+                storage = 200,
+                selectivityMapping = mapOf(
+                    forwarding(Tuples.NIRCameraImage to Tuples.RoadWeatherConditions),
+                )
             )
-        )
 
-        appEdge(NIRCamera, Modules.DriverAssistanceSystem, NIRCamera, Up, appEdgeType = FromSensor, cpuLength = 500.0)
-        appEdge(Modules.DriverAssistanceSystem, Modules.RoadWeatherClassification, Tuples.NIRCameraImage, Up, cpuLength = 5000.0)
+            addAppEdge(NIRCamera, Modules.DriverAssistanceSystem, NIRCamera, Up, appEdgeType = FromSensor, cpuLength = 500.0)
+            addAppEdge(Modules.DriverAssistanceSystem, Modules.RoadWeatherClassification, Tuples.NIRCameraImage, Up, cpuLength = 5000.0)
 
-        appEdge(Modules.RoadWeatherClassification, Modules.DriverAssistanceSystem, Tuples.RoadWeatherConditions, Down, cpuLength = 1000.0)
-        appEdge(Modules.DriverAssistanceSystem, Modules.SpeedControl, Tuples.EstimatedBreakingDistance, Actuator, appEdgeType = ToActuator, cpuLength = 14.0, dataSize = 1.0)
+            addAppEdge(Modules.RoadWeatherClassification, Modules.DriverAssistanceSystem, Tuples.RoadWeatherConditions, Down, cpuLength = 1000.0)
+            addAppEdge(Modules.DriverAssistanceSystem, Modules.SpeedControl, Tuples.EstimatedBreakingDistance, Actuator, appEdgeType = ToActuator, cpuLength = 14.0, dataSize = 1.0)
 
-        appLoop(
-            NIRCamera,
-            Modules.DriverAssistanceSystem,
-            Modules.RoadWeatherClassification,
-            Modules.DriverAssistanceSystem,
-            Modules.SpeedControl,
-        )
+            addAppLoop(
+                NIRCamera,
+                Modules.DriverAssistanceSystem,
+                Modules.RoadWeatherClassification,
+                Modules.DriverAssistanceSystem,
+                Modules.SpeedControl,
+            )
+        }
     }
 
     private fun initializeVehicles() = simulation.apply {
@@ -107,20 +109,20 @@ class RoadWeatherWithMobility {
             randMobilityGenerator.createRandomData(random_walk_mobility_model, it, dataset_random, false)
         }
 
-        environment.locator.parseUserInfo(
+        network.locator.parseUserInfo(
             (1..simulation.config.numberOfVehicles).associateWith { DIRECTIONAL_MOBILITY },
             dataset_random
         )
 
-        environment.locator.mobileUserDataId.forEach { userId ->
+        network.locator.mobileUserDataId.forEach { userId ->
             addVehicle().also {
-                environment.locator.linkDataWithInstance(it.id, userId)
+                network.locator.linkDataWithInstance(it.id, userId)
             }
         }
     }
 
     private fun addVehicle() = simulation.run {
-        fogDevice(
+        addFogDevice(
             FogDevices.Vehicle,
             level = FogDeviceLevel.User,
             mips = 150,
@@ -131,22 +133,24 @@ class RoadWeatherWithMobility {
             idlePower = 82.44,
             microservicesFogDeviceType = Client
         ).also { vehicle ->
-            sensor(
-                gateway = vehicle,
-                tupleType = NIRCamera,
-                latency = 6.0,
-                emissionDistribution = DeterministicDistribution(1000.0 / config.nirCameraFPS)
-            )
-            actuator(
-                gateway = vehicle,
-                module = Modules.SpeedControl,
-                latency = 1.0,
-            )
+            workload[""]!!.apply {
+                addSensor(
+                    gateway = vehicle,
+                    tupleType = NIRCamera,
+                    latency = 6.0,
+                    emissionDistribution = DeterministicDistribution(1000.0 / config.nirCameraFPS)
+                )
+                addActuator(
+                    gateway = vehicle,
+                    module = Modules.SpeedControl,
+                    latency = 1.0,
+                )
+            }
         }
     }
 
     private fun add5GRadioUnit() = simulation.run {
-        fogDevice(
+        addFogDevice(
             FogDevices.FiveGRadioUnit,
             level = FogDeviceLevel.Gateway,
             mips = 2500,
@@ -160,7 +164,7 @@ class RoadWeatherWithMobility {
     }
 
     private fun addProxyServer(cloudId: Int) = simulation.run {
-        fogDevice(
+        addFogDevice(
             FogDevices.ProxyServer,
             level = FogDeviceLevel.Proxy,
             parentId = cloudId,
@@ -174,11 +178,11 @@ class RoadWeatherWithMobility {
     }
 
     private fun initializeFogDevices() = simulation.apply {
-        environment.locator.parseResourceInfo()
-        val cloudLocationId = environment.locator.getLevelWiseResources(FogDeviceLevel.Cloud.id).firstOrNull()
+        network.locator.parseResourceInfo()
+        val cloudLocationId = network.locator.getLevelWiseResources(FogDeviceLevel.Cloud.id).firstOrNull()
         check(cloudLocationId != null) { "Incorrectly parsed location info" }
 
-        val cloud = fogDevice(
+        val cloud = addFogDevice(
             FogDevices.cloud,
             level = FogDeviceLevel.Cloud,
             mips = 44_800,
@@ -189,19 +193,19 @@ class RoadWeatherWithMobility {
             idlePower = 16 * 83.25,
             microservicesFogDeviceType = Cloud
         ).also {
-            environment.locator.linkDataWithInstance(it.id, cloudLocationId)
+            network.locator.linkDataWithInstance(it.id, cloudLocationId)
         }
 
-        environment.locator.getLevelWiseResources(FogDeviceLevel.Proxy.id).forEach { proxyId ->
+        network.locator.getLevelWiseResources(FogDeviceLevel.Proxy.id).forEach { proxyId ->
             addProxyServer(cloud.id).also {
-                environment.locator.linkDataWithInstance(it.id, proxyId)
+                network.locator.linkDataWithInstance(it.id, proxyId)
             }
         }
 
-        environment.locator.getLevelWiseResources(FogDeviceLevel.Gateway.id).forEach { gatewayId ->
+        network.locator.getLevelWiseResources(FogDeviceLevel.Gateway.id).forEach { gatewayId ->
             add5GRadioUnit().also {
-                environment.locator.linkDataWithInstance(it.id, gatewayId)
-                it.parentId = environment.locator.determineParent(it.id, SETUP_TIME)
+                network.locator.linkDataWithInstance(it.id, gatewayId)
+                it.parentId = network.locator.determineParent(it.id, SETUP_TIME)
             }
         }
     }
