@@ -68,7 +68,7 @@ class CHM {
         reportSimulation(simulation, "./simulations")
     }
 
-    private fun initializeApplication() = simulation.addApplication("", "chm").apply {
+    private fun initializeApplication() = simulation.addApplication("").apply {
         addAppModule(
             Modules.Client,
             ram = 128,

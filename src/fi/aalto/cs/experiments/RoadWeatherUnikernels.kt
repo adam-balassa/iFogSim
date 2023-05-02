@@ -2,25 +2,24 @@
 
 package fi.aalto.cs.experiments
 
-import fi.aalto.cs.experiments.SimpleRoadWeatherExample.FogDevices.*
-import fi.aalto.cs.experiments.SimpleRoadWeatherExample.Modules.*
-import fi.aalto.cs.experiments.SimpleRoadWeatherExample.Tuples.*
+import fi.aalto.cs.experiments.RoadWeatherUnikernels.FogDevices.*
+import fi.aalto.cs.experiments.RoadWeatherUnikernels.Modules.*
+import fi.aalto.cs.experiments.RoadWeatherUnikernels.Tuples.*
 import fi.aalto.cs.utils.*
 import fi.aalto.cs.utils.AppEdgeType.*
 import fi.aalto.cs.utils.FogDeviceLevel.Gateway
 import fi.aalto.cs.utils.FogDeviceLevel.Proxy
 import fi.aalto.cs.utils.MicroservicesFogDeviceType.*
-import fi.aalto.cs.utils.ModulePlacementStrategy.Static
 import fi.aalto.cs.utils.TupleDirection.*
 import org.fog.utils.distribution.DeterministicDistribution
 
 fun main() {
     // enableDebugLogging()
-    // enableReporting()
-    SimpleRoadWeatherExample().run()
+    enableReporting()
+    RoadWeatherUnikernels().run()
 }
 
-class SimpleRoadWeatherExample {
+class RoadWeatherUnikernels {
     private enum class Modules : ModuleType {
         DriverAssistanceSystem,
         RoadWeatherClassification,
@@ -42,38 +41,24 @@ class SimpleRoadWeatherExample {
     }
 
     private val simulation = Simulation(
-        "Simple road weather example",
+        "Road weather with unikernels",
         object {
             val numberOfVehiclesPerRU = 8
             val numberOfRadioUnitsPerParent = 2
             val numberOfProxyServers = 2
-            val nirCameraFPS = 10
-            val classificationModulePlacement = FiveGRadioUnit
-            val microserviceController = true
-            val stochasticAppEdge = true
         },
     )
 
     init {
-        initializeApplication()
         initializeFogDevices()
+        initializeUsers()
 
         simulation.apply {
-            if (config.microserviceController) {
-                microservicesController(
-                    clusterLevels = listOf(Gateway),
-                    clusterLinkLatency = 2,
-                    clientModule = DriverAssistanceSystem
-                )
-            } else {
-                controller(
-                    placementStrategy = Static,
-                    staticPlacement = mapOf(
-                        DriverAssistanceSystem to Vehicle,
-                        RoadWeatherClassification to config.classificationModulePlacement
-                    )
-                )
-            }
+            microservicesController(
+                clusterLevels = listOf(Gateway),
+                clusterLinkLatency = 2,
+                clientModule = DriverAssistanceSystem
+            )
         }
     }
 
@@ -82,8 +67,18 @@ class SimpleRoadWeatherExample {
         reportSimulation(simulation, "./simulations")
     }
 
-    private fun initializeApplication() = simulation.apply {
-        addApplication("").apply {
+    private fun initializeUsers() = simulation.apply {
+        network.fogDevices[FiveGRadioUnit.name]?.forEach { radioUnit ->
+            for (i in 0 until config.numberOfVehiclesPerRU) {
+                val workload = this@RoadWeatherUnikernels.addApplication()
+                addVehicle(radioUnit.id, workload.id)
+            }
+        }
+    }
+
+    private fun addApplication() = simulation.run {
+        val numberOfVehicles = config.numberOfProxyServers * config.numberOfRadioUnitsPerParent * config.numberOfVehiclesPerRU
+        addApplication(name = "rwa").apply {
             addAppModule(
                 DriverAssistanceSystem,
                 ram = 128,
@@ -96,9 +91,10 @@ class SimpleRoadWeatherExample {
             )
             addAppModule(
                 RoadWeatherClassification,
-                ram = 1024,
-                mips = 2500.0,
-                storage = 200,
+                ram = 1024 / numberOfVehicles + 10,
+                mips = 2500.0 / numberOfVehicles + 25,
+                storage = 200 / numberOfVehicles + 10L,
+                bandwidth = 1000 / numberOfVehicles + 10L,
                 selectivityMapping = mapOf(
                     forwarding(NIRCameraImage to RoadWeatherConditions),
                 )
@@ -111,7 +107,6 @@ class SimpleRoadWeatherExample {
                 Up,
                 appEdgeType = FromSensor,
                 cpuLength = 500.0,
-                cpuLengthGenerator = if (config.stochasticAppEdge) poissonNumberGenerator(500.0, 20.0) else null
             )
             addAppEdge(
                 DriverAssistanceSystem,
@@ -119,7 +114,6 @@ class SimpleRoadWeatherExample {
                 NIRCameraImage,
                 Up,
                 cpuLength = 5000.0,
-                cpuLengthGenerator = if (config.stochasticAppEdge) poissonNumberGenerator(5000.0, 40.0) else null
             )
 
             addAppEdge(
@@ -128,9 +122,16 @@ class SimpleRoadWeatherExample {
                 RoadWeatherConditions,
                 Down,
                 cpuLength = 1000.0,
-                cpuLengthGenerator = if (config.stochasticAppEdge) poissonNumberGenerator(1000.0, 30.0) else null
             )
-            addAppEdge(DriverAssistanceSystem, SpeedControl, EstimatedBreakingDistance, Actuator, appEdgeType = ToActuator, cpuLength = 14.0, dataSize = 1.0)
+            addAppEdge(
+                DriverAssistanceSystem,
+                SpeedControl,
+                EstimatedBreakingDistance,
+                Actuator,
+                appEdgeType = ToActuator,
+                cpuLength = 14.0,
+                dataSize = 1.0
+            )
 
             addAppLoop(
                 NIRCamera,
@@ -142,7 +143,7 @@ class SimpleRoadWeatherExample {
         }
     }
 
-    private fun addVehicle(connectedRadioUnit: Int) = simulation.apply {
+    private fun addVehicle(connectedRadioUnit: Int, workloadId: String) = simulation.apply {
         val vehicle = addFogDevice(
             Vehicle,
             level = FogDeviceLevel.User,
@@ -153,14 +154,14 @@ class SimpleRoadWeatherExample {
             uplinkLatency = 2.0,
             busyPower = 87.53,
             idlePower = 82.44,
-            microservicesFogDeviceType = if (config.microserviceController) Client else null
+            microservicesFogDeviceType = Client
         )
-        workload[""]!!.apply {
+        workload[workloadId]!!.apply {
             addSensor(
                 gateway = vehicle,
                 tupleType = NIRCamera,
                 latency = 6.0,
-                emissionDistribution = DeterministicDistribution(1000.0 / config.nirCameraFPS)
+                emissionDistribution = DeterministicDistribution(1000.0 / 10.0)
             )
 
             addActuator(
@@ -181,13 +182,9 @@ class SimpleRoadWeatherExample {
             uplinkLatency = latency,
             busyPower = 107.339,
             idlePower = 83.4333,
-            microservicesFogDeviceType = if (config.microserviceController) FCN else null,
-            broadcastResults = config.microserviceController
-        ).let {
-            for (i in 0 until config.numberOfVehiclesPerRU) {
-                addVehicle(it.id)
-            }
-        }
+            microservicesFogDeviceType = FCN,
+            broadcastResults = true
+        )
     }
 
     private fun addProxyServer(cloudId: Int) = simulation.apply {
@@ -200,7 +197,7 @@ class SimpleRoadWeatherExample {
             uplinkLatency = 100.0,
             busyPower = 107.339,
             idlePower = 83.4333,
-            microservicesFogDeviceType = if (config.microserviceController) FON else null
+            microservicesFogDeviceType = FON
         ).let {
             for (i in 0 until config.numberOfRadioUnitsPerParent) {
                 add5GRadioUnit(it.id, 20.0)
@@ -218,7 +215,7 @@ class SimpleRoadWeatherExample {
             costRatePerMips = 0.001,
             busyPower = 16 * 103.0,
             idlePower = 16 * 83.25,
-            microservicesFogDeviceType = if (config.microserviceController) Cloud else null
+            microservicesFogDeviceType = Cloud
         )
 
         if (config.numberOfProxyServers > 0) {

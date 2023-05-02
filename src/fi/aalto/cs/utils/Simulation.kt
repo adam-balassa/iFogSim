@@ -34,9 +34,9 @@ class Simulation<Config>(
     }
 }
 
-class Workload(name: String) {
-    val user: FogBroker = FogBroker("broker-$name")
-    val application: Application = createApplication(name, user.id)
+class Workload(val id: String, val name: String) {
+    val user: FogBroker = FogBroker("broker-$name$id")
+    val application: Application = createApplication("$name$id", user.id)
 
     // Sensors and actuators are modeled as both physical devices and as parts of the application
     // They added as part of the workload (instead of the network), since their instances are application specific

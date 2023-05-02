@@ -30,8 +30,8 @@ fun forwarding(mapping: Pair<TupleType, TupleType>, probability: Double = 1.0) =
 
 fun <T> Simulation<T>.addApplication(
     id: String = "${this.workload.size + 1}",
-    name: String = (this.name.split(' ').joinToString { "-" } + "-" + id),
-) = Workload(name).also { workload[id] = it }
+    name: String = "",
+) = Workload(id, name).also { workload[id] = it }
 
 /**
  * Add an app module to the application
@@ -51,7 +51,7 @@ fun Workload.addAppModule(
     selectivityMapping: Map<Pair<TupleType, TupleType>, SelectivityModel> = mutableMapOf(),
 ) = AppModule(
     generateEntityId(),
-    module.name,
+    named(module),
     application.appId,
     user.id,
     mips,
@@ -62,7 +62,7 @@ fun Workload.addAppModule(
     TupleScheduler(mips, 1),
     mutableMapOf<ApachePair<String, String>, SelectivityModel?>().apply {
         selectivityMapping.forEach { (t1, t2), model ->
-            put(ApachePair(t1.name, t2.name), model)
+            put(ApachePair(named(t1), named(t2)), model)
         }
     },
 ).also {
@@ -94,22 +94,22 @@ fun Workload.addAppEdge(
 ): AppEdge {
     val edge = if (cpuLengthGenerator != null) {
         StochasticAppEdge(
-            source.name,
-            destination.name,
+            named(source),
+            named(destination),
             cpuLengthGenerator,
             dataSizeGenerator ?: { dataSize },
-            tupleType.name,
+            named(tupleType),
             direction.id,
             appEdgeType.id
         )
     } else if (cpuLength != null) {
-        AppEdge(source.name, destination.name, cpuLength, dataSize, tupleType.name, direction.id, appEdgeType.id)
+        AppEdge(named(source), named(destination), cpuLength, dataSize, named(tupleType), direction.id, appEdgeType.id)
     } else {
         throw IllegalStateException("Either parameters cpuLengthGenerator or cpuLength are mandatory")
     }
     return edge.also {
         application.edges.add(it)
-        application.edgeMap[tupleType.name] = edge
+        application.edgeMap[named(tupleType)] = edge
     }
 }
 
@@ -219,7 +219,7 @@ fun <T> Simulation<T>.addFogDevice(
  */
 fun Workload.addAppLoop(vararg modules: ModuleType) {
     if (application.loops == null) application.loops = mutableListOf()
-    application.loops.add(AppLoop(modules.map { it.name }))
+    application.loops.add(AppLoop(modules.map { named(it) }))
 }
 
 /**
@@ -236,7 +236,7 @@ fun Workload.addSensor(
     emissionDistribution: Distribution
 ) = Sensor(
     "s-${gateway.name}-${application.appId}",
-    tupleType.name,
+    named(tupleType),
     user.id,
     application.appId,
     emissionDistribution
@@ -262,7 +262,7 @@ fun Workload.addActuator(
     "a-${gateway.name}",
     user.id,
     application.appId,
-    module.name
+    named(module)
 ).also {
     it.latency = latency
     it.gatewayDeviceId = gateway.id
@@ -281,7 +281,7 @@ private fun Workload.placementRequest(
     application.appId,
     sensor.id,
     sensor.gatewayDeviceId,
-    mutableMapOf(module.name to sensor.gatewayDeviceId)
+    mutableMapOf(named(module) to sensor.gatewayDeviceId)
 )
 
 /**
@@ -301,7 +301,7 @@ fun <T> Simulation<T>.controller(
     val moduleMapping = ModuleMapping.createModuleMapping().apply {
         staticPlacement.forEach { (moduleType, fogDeviceType) ->
             network.fogDevices[fogDeviceType.name]?.forEach {
-                addModuleToDevice(moduleType.name, it.name)
+                addModuleToDevice(workload.values.first().named(moduleType), it.name)
             }
         }
     }
@@ -397,3 +397,6 @@ fun <T> Simulation<T>.microservicesMobilityClusteringController(
         }
     }
 }
+
+fun Workload.named(resource: NamedEntityType) =
+    if (application.appId != "") "${application.appId}-${resource.name}" else resource.name

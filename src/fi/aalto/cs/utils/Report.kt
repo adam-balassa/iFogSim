@@ -5,7 +5,6 @@ import fi.aalto.cs.extensions.E2ELatencyMonitor
 import fi.aalto.cs.extensions.ExecutionLevelMonitor
 import fi.aalto.cs.extensions.StochasticAppEdge
 import org.cloudbus.cloudsim.Pe
-import org.fog.application.AppLoop
 import org.fog.application.Application
 import org.fog.entities.Actuator
 import org.fog.entities.FogDevice
@@ -47,11 +46,12 @@ inline fun <reified Config> reportSimulation(simulation: Simulation<Config>, roo
 fun <T> reportSimulationResults(simulation: Simulation<T>): Map<String, Any> {
     val timeKeeper = TimeKeeper.getInstance()
     val executionTime = Calendar.getInstance().timeInMillis - timeKeeper.simulationStartTime
-    val appLoopLatencies = getAppLoopLatencies(simulation.workload.values.first().application.loops, timeKeeper)
-    val tupleExecutionLatencies = getTupleExecutionLatencies(timeKeeper)
+    val appLoopLatencies = getAppLoopLatencies(simulation.workload.values, timeKeeper)
+    val tupleExecutionLatencies = getTupleExecutionLatencies(simulation.workload.values, timeKeeper)
     val fogDeviceEnergyConsumptions = getFogDeviceEnergyConsumptions(simulation.network.fogDevices)
     val networkUsage = NetworkUsageMonitor.getNetworkUsage() / Config.MAX_SIMULATION_TIME
     val migrationDelay = MigrationDelayMonitor.getMigrationDelay()
+    val executionLevels = getExecutionLevels(simulation.workload.values)
 
     return mapOf(
         "executionTime" to executionTime,
@@ -60,26 +60,54 @@ fun <T> reportSimulationResults(simulation: Simulation<T>): Map<String, Any> {
         "appLoopLatencies" to appLoopLatencies,
         "tupleExecutionLatencies" to tupleExecutionLatencies,
         "fogDeviceEnergyConsumptions" to fogDeviceEnergyConsumptions,
-        "executionLevels" to ExecutionLevelMonitor.tupleTypeToLatencyMap,
+        "executionLevels" to executionLevels,
     )
 }
 
-fun getAppLoopLatencies(appLoops: List<AppLoop>, timeKeeper: TimeKeeper) =
-    appLoops.map { appLoop ->
-        mapOf(
-            "appLoop" to appLoop.modules,
-            "avgLatency" to timeKeeper.loopIdToCurrentAverage[appLoop.loopId],
-            "latencies" to E2ELatencyMonitor.loopIdToLatencies[appLoop.loopId]
-        )
-    }
+private fun getExecutionLevels(workloads: Collection<Workload>): Map<String, List<String>> {
+    val applications = workloads.groupBy { it.name }
+    return ExecutionLevelMonitor.tupleTypeToExecutionLevel.entries.groupBy { (tupleType) ->
+        val app = applications.keys.find { tupleType.startsWith(it) && "-" in tupleType.substring(it.length) }
+        app ?: ""
+    }.flatMap { (_, tuples) ->
+        tuples
+            .groupBy { it.key.split("-").last() }
+            .entries.map { (tupleType, executionLevels) ->
+                tupleType to executionLevels.flatMap { it.value }
+            }
+    }.toMap()
+}
 
-fun getTupleExecutionLatencies(timeKeeper: TimeKeeper) =
-    timeKeeper.tupleTypeToAverageCpuTime.map { (tupleType, avgCpuTime) ->
-        mapOf(
-            "tuple" to tupleType,
-            "cpuTime" to avgCpuTime
-        )
+fun getAppLoopLatencies(workloads: Collection<Workload>, timeKeeper: TimeKeeper): List<Map<String, Any?>> {
+    val applications = workloads.groupBy { it.name }
+    return applications.values.flatMap { apps ->
+        apps.first().application.loops.indices.map { i ->
+            val loops = apps.map { it.application.loops[i] }
+            mapOf(
+                "appLoop" to loops[0].modules,
+                "avgLatency" to loops.sumOf { timeKeeper.loopIdToCurrentAverage[it.loopId] ?: 0.0 } / loops.size,
+                "latencies" to loops.flatMap { E2ELatencyMonitor.loopIdToLatencies[it.loopId] ?: emptyList() }
+            )
+        }
     }
+}
+
+fun getTupleExecutionLatencies(workloads: Collection<Workload>, timeKeeper: TimeKeeper): List<Map<String, Any>> {
+    val applications = workloads.groupBy { it.name }
+    return timeKeeper.tupleTypeToAverageCpuTime.entries.groupBy { (tupleType) ->
+        val app = applications.keys.find { tupleType.startsWith(it) && "-" in tupleType.substring(it.length) }
+        app ?: ""
+    }.flatMap { (_, tuples) ->
+        tuples
+            .groupBy { it.key.split("-").last() }
+            .entries.map { (tupleType, avgCpuTimes) ->
+                mapOf(
+                    "tuple" to tupleType,
+                    "cpuTime" to avgCpuTimes.sumOf { it.value } / avgCpuTimes.size
+                )
+            }
+    }
+}
 
 fun getFogDeviceEnergyConsumptions(fogDevices: Map<String, List<FogDevice>>) =
     fogDevices.flatMap { (groupId, devices) ->
