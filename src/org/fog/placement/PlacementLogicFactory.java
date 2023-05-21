@@ -1,5 +1,6 @@
 package org.fog.placement;
 
+import fi.aalto.cs.extensions.RandomDevicePlacement;
 import org.fog.utils.Logger;
 
 /**
@@ -10,6 +11,7 @@ public class PlacementLogicFactory {
     public static final int EDGEWART_MICROSERCVICES_PLACEMENT = 1;
     public static final int CLUSTERED_MICROSERVICES_PLACEMENT = 2;
     public static final int DISTRIBUTED_MICROSERVICES_PLACEMENT =3;
+    public static final int RANDOM_PLACEMENT = 4;
 
     public MicroservicePlacementLogic getPlacementLogic(int logic, int fonId) {
         switch (logic) {
@@ -19,6 +21,8 @@ public class PlacementLogicFactory {
                 return new ClusteredMicroservicePlacementLogic(fonId);
             case DISTRIBUTED_MICROSERVICES_PLACEMENT:
                 return new DistributedMicroservicePlacementLogic(fonId);
+            case RANDOM_PLACEMENT:
+                return new RandomDevicePlacement();
         }
 
         Logger.error("Placement Logic Error", "Error initializing placement logic");
