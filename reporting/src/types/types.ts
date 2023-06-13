@@ -7,7 +7,10 @@ export interface ExperimentSetup {
     edges: (Config & { from: string, to: string, tuple: string })[],
   }
   config: Config,
-  fogDevices: (Config & { level: 'Cloud' | 'Proxy' | 'Gateway' | 'User' })[]
+  fogDevices: (Config & {
+    level: 'Cloud' | 'Proxy' | 'Gateway' | 'User',
+    type?: string,
+  })[]
   network: {
     id: number;
     parent: number

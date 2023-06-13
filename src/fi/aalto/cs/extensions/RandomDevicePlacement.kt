@@ -1,5 +1,6 @@
 package fi.aalto.cs.extensions
 
+import fi.aalto.cs.utils.FogDeviceLevel.User
 import fi.aalto.cs.utils.add
 import org.fog.application.Application
 import org.fog.entities.ControllerComponent.CPU
@@ -9,9 +10,19 @@ import org.fog.entities.Tuple.UP
 import org.fog.placement.MicroservicePlacementLogic
 import org.fog.placement.PlacementLogicOutput
 import org.fog.utils.ModuleLaunchConfig
+import kotlin.Double
+import kotlin.Int
+import kotlin.Pair
+import kotlin.String
+import kotlin.apply
+import kotlin.let
+import kotlin.to
 import org.apache.commons.math3.util.Pair as ApachePair
 
+/** Placement request -> (App module -> Device id) */
 typealias Placement = MutableMap<Int, MutableMap<String, Int>>
+
+/** Device -> (App module -> number of instances) */
 typealias ModuleInstances = MutableMap<Int, MutableMap<String, Int>>
 
 class RandomDevicePlacement : MicroservicePlacementLogic {
@@ -36,7 +47,7 @@ class RandomDevicePlacement : MicroservicePlacementLogic {
         placementRequests: List<PlacementRequest>,
         applicationInfo: Map<String, Application>
     ): Pair<Placement, ModuleInstances> {
-        chosenDevice = fogDevices.filter { it.level > 1 }.random()
+        chosenDevice = fogDevices.filter { it.level != User.id }.random()
 
         fun ModuleInstances.put(deviceId: Int, microservice: String) {
             this[deviceId]?.let { it[microservice] = (it[microservice] ?: 0) + 1 } ?: let {
@@ -50,7 +61,7 @@ class RandomDevicePlacement : MicroservicePlacementLogic {
                 val app = applicationInfo[pr.applicationId]!!
                 app.specialPlacementInfo.entries.forEach { (microservice, devices) ->
                     devices.forEach { deviceName ->
-                        this.put(fogDevices[deviceName]!!.id, microservice)
+                        put(fogDevices[deviceName]!!.id, microservice)
                     }
                 }
             }
@@ -65,7 +76,7 @@ class RandomDevicePlacement : MicroservicePlacementLogic {
                     .map { it.name }
                     .toSet()
                 microservicesToPlace.forEach { microservice ->
-                    this.add(pr.placementRequestId, microservice, chosenDevice.id)
+                    add(pr.placementRequestId, microservice, chosenDevice.id)
                     moduleInstances.put(chosenDevice.id, microservice)
                 }
             }

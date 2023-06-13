@@ -417,8 +417,9 @@ public class MicroserviceFogDevice extends FogDevice {
         JSONObject object = (JSONObject) ev.getData();
         Pair<String, Integer> placement = (Pair<String, Integer>) object.get("service data");
         String action = (String) object.get("action");
-        if (action.equals("ADD"))
+        if (action.equals("ADD")) {
             this.controllerComponent.addServiceDiscoveryInfo(placement.getFirst(), placement.getSecond());
+        }
         else if (action.equals("REMOVE"))
             this.controllerComponent.removeServiceDiscoveryInfo(placement.getFirst(), placement.getSecond());
     }

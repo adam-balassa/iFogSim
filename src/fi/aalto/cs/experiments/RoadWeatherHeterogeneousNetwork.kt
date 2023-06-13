@@ -10,6 +10,7 @@ import fi.aalto.cs.utils.AppEdgeType.FromSensor
 import fi.aalto.cs.utils.AppEdgeType.ToActuator
 import fi.aalto.cs.utils.FogDeviceLevel.Gateway
 import fi.aalto.cs.utils.FogDeviceLevel.Proxy
+import fi.aalto.cs.utils.MicroservicePlacementStrategy.ClusteredPlacement
 import fi.aalto.cs.utils.MicroservicePlacementStrategy.RandomPlacement
 import fi.aalto.cs.utils.MicroservicesFogDeviceType.*
 import fi.aalto.cs.utils.TupleDirection.*
@@ -17,7 +18,7 @@ import org.fog.utils.distribution.DeterministicDistribution
 
 fun main() {
     // enableDebugLogging()
-    enableReporting()
+    // enableReporting()
     RoadWeatherHeterogeneousNetwork().run()
 }
 
@@ -39,7 +40,7 @@ class RoadWeatherHeterogeneousNetwork {
     }
 
     private enum class FogDevices : FogDeviceType {
-        Vehicle, FiveGRadioUnit, ProxyServer, cloud // ktlint-disable enum-entry-name-case
+        Vehicle, FiveGRadioUnit, ProxyServer, cloud, CloudFON // ktlint-disable enum-entry-name-case
     }
 
     private val simulation = Simulation(
@@ -48,7 +49,8 @@ class RoadWeatherHeterogeneousNetwork {
             val numberOfVehiclesPerRU = 8
             val numberOfRadioUnitsPerParent = 2
             val numberOfProxyServers = 2
-            val nirCameraFPS = 10
+            val centralisedPlacement = false
+            val randomPlacement = false
         },
     )
 
@@ -61,7 +63,7 @@ class RoadWeatherHeterogeneousNetwork {
                 clusterLevels = listOf(Gateway),
                 clusterLinkLatency = 2,
                 clientModule = DriverAssistanceSystem,
-                placementStrategy = RandomPlacement
+                placementStrategy = if (config.randomPlacement) RandomPlacement else ClusteredPlacement
             )
         }
     }
@@ -149,7 +151,7 @@ class RoadWeatherHeterogeneousNetwork {
                 gateway = vehicle,
                 tupleType = NIRCamera,
                 latency = 6.0,
-                emissionDistribution = DeterministicDistribution(1000.0 / config.nirCameraFPS)
+                emissionDistribution = DeterministicDistribution(100.0)
             )
 
             addActuator(
@@ -189,7 +191,7 @@ class RoadWeatherHeterogeneousNetwork {
             uplinkLatency = poissonNumber(100.0),
             busyPower = 107.339,
             idlePower = 83.4333,
-            microservicesFogDeviceType = FON
+            microservicesFogDeviceType = if (config.centralisedPlacement) FCN else FON
         ).let {
             for (i in 0 until config.numberOfRadioUnitsPerParent) {
                 add5GRadioUnit(it.id, poissonNumber(20.0))
@@ -201,7 +203,7 @@ class RoadWeatherHeterogeneousNetwork {
         val cloud = addFogDevice(
             cloud,
             level = FogDeviceLevel.Cloud,
-            mips = 44_800,
+            mips = 88_800,
             ram = 40_000,
             uplinkBandwidth = 100,
             costRatePerMips = 0.001,
@@ -209,14 +211,14 @@ class RoadWeatherHeterogeneousNetwork {
             idlePower = 16 * 83.25,
             microservicesFogDeviceType = Cloud
         )
-
+        val cloudId = cloud.id
         if (config.numberOfProxyServers > 0) {
             for (i in 0 until config.numberOfProxyServers) {
-                addProxyServer(cloud.id)
+                addProxyServer(cloudId)
             }
         } else {
             for (i in 0 until config.numberOfRadioUnitsPerParent) {
-                add5GRadioUnit(cloud.id, poissonNumber(100.0))
+                add5GRadioUnit(cloudId, poissonNumber(100.0))
             }
         }
     }

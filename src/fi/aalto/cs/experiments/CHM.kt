@@ -10,7 +10,7 @@ import org.fog.mobilitydata.References.*
 import org.fog.utils.distribution.DeterministicDistribution
 
 fun main() {
-    enableReporting()
+//    enableReporting()
     CHM().run()
 }
 

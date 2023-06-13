@@ -11,6 +11,7 @@ import org.fog.entities.*;
 import org.fog.utils.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by Samodha Pallewatta on 7/31/2020.
@@ -186,10 +187,17 @@ public class MicroservicesController extends SimEntity {
                 send(getId(), placementRequestDelayMap.get(p), FogEvents.TRANSMIT_PR, p);
         }
         if (MicroservicePlacementConfig.PR_PROCESSING_MODE.equals(MicroservicePlacementConfig.PERIODIC)) {
-            for (FogDevice f : fogDevices) {
-                if (((MicroserviceFogDevice) f).getDeviceType().equals(MicroserviceFogDevice.FON)) {
-                    sendNow(f.getId(), FogEvents.PROCESS_PRS);
-                }
+            List<FogDevice> fons = fogDevices.stream()
+                    .map(f -> (MicroserviceFogDevice) f)
+                    .filter(d -> d.getDeviceType().equals(MicroserviceFogDevice.FON))
+                    .collect(Collectors.toList());
+            if (!fons.isEmpty()) {
+                fons.forEach(fon -> sendNow(fon.getId(), FogEvents.PROCESS_PRS));
+            } else {
+                fogDevices.stream()
+                        .map(f -> (MicroserviceFogDevice) f)
+                        .filter(d -> d.getDeviceType().equals(MicroserviceFogDevice.CLOUD))
+                        .findFirst().ifPresent(cloud -> sendNow(cloud.getId(), FogEvents.PROCESS_PRS));
             }
         }
     }

@@ -216,15 +216,15 @@ fun getNetworkConfig(fogDevices: Map<String, List<FogDevice>>): List<Any> {
 }
 
 fun getFogDeviceConfigs(fogDevices: Map<String, List<FogDevice>>) =
-    fogDevices.map { (levelId, devices) ->
-        getConfigForFogDevice(levelId, devices.first()).apply {
+    fogDevices.map { (typeId, devices) ->
+        getConfigForFogDevice(typeId, devices.first()).apply {
             put("numberOfDevices", devices.size)
         }
     }
 
-fun getConfigForFogDevice(levelId: String, device: FogDevice): MutableMap<String, Any> =
+fun getConfigForFogDevice(typeId: String, device: FogDevice): MutableMap<String, Any> =
     listOfNotNull(
-        "level" to levelId,
+        "type" to typeId,
         "mips" to device.host.getPeList<Pe>().first().mips,
         "ram" to device.host.ram,
         "level" to FogDeviceLevel.values()[device.level],
