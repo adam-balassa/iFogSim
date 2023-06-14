@@ -13,6 +13,7 @@ import org.fog.application.AppModule
 import org.fog.application.selectivity.FractionalSelectivity
 import org.fog.application.selectivity.SelectivityModel
 import org.fog.entities.*
+import org.fog.mobilitydata.Location
 import org.fog.mobilitydata.References.NOT_SET
 import org.fog.placement.*
 import org.fog.policy.AppModuleAllocationPolicy
@@ -154,6 +155,7 @@ fun <T> Simulation<T>.addFogDevice(
     costRatePerMemory: Double = 0.0,
     costRatePerBandwidth: Double = 0.0,
     costRatePerStorage: Double = 0.001,
+    location: Location? = null,
     microservicesFogDeviceType: MicroservicesFogDeviceType? = null,
     broadcastResults: Boolean = false
 ): FogDevice {
@@ -209,6 +211,15 @@ fun <T> Simulation<T>.addFogDevice(
             network.fogDevices[type.name]?.add(it)
         } else {
             network.fogDevices[type.name] = mutableListOf(it)
+        }
+        location?.let { location ->
+            val locationData = network.locator.dataObject
+            locationData.resourceLocationData[name] = location
+            locationData.resourceAndUserToLevel[name] = level.id
+            locationData.levelwiseResources[level.id]?.run { add(name); true } ?: let {
+                locationData.levelwiseResources[level.id] = arrayListOf(name)
+            }
+            network.locator.linkDataWithInstance(it.id, name)
         }
     }
 }

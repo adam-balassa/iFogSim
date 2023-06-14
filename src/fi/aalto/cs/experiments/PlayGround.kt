@@ -1,14 +1,8 @@
 package fi.aalto.cs.experiments
 
-import fi.aalto.cs.utils.poissonNumberGenerator
+import org.apache.commons.math3.random.EmpiricalDistribution
 
 fun main() {
-    val generator = poissonNumberGenerator(4000.0)
-    println(
-        (0..100)
-            .map { generator() }
-            .groupBy { it }
-            .map { (value, count) -> value to count.size }
-            .sortedBy { (key, _) -> key }
-    )
+    val distro = EmpiricalDistribution().apply { load(doubleArrayOf(10.0, 10.0, 20.0, 20.9)) }
+    repeat(10) { println(distro.nextValue) }
 }
