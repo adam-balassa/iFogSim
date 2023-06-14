@@ -1,8 +1,7 @@
 package fi.aalto.cs.experiments
 
-import org.apache.commons.math3.random.EmpiricalDistribution
+import kotlin.random.Random
 
 fun main() {
-    val distro = EmpiricalDistribution().apply { load(doubleArrayOf(10.0, 10.0, 20.0, 20.9)) }
-    repeat(10) { println(distro.nextValue) }
+    repeat(100) { println(Random.nextDouble()) }
 }

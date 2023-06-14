@@ -10,6 +10,7 @@ import org.fog.entities.Actuator
 import org.fog.entities.FogDevice
 import org.fog.entities.MicroserviceFogDevice
 import org.fog.entities.Sensor
+import org.fog.placement.LocationHandler
 import org.fog.utils.Config
 import org.fog.utils.MigrationDelayMonitor
 import org.fog.utils.NetworkUsageMonitor
@@ -123,7 +124,7 @@ fun getFogDeviceEnergyConsumptions(fogDevices: Map<String, List<FogDevice>>) =
 inline fun <reified Config> reportSimulationSetup(simulation: Simulation<Config>): Map<String, Any> {
     val config = getGlobalSettings(simulation.config)
     val fogDeviceConfigs = getFogDeviceConfigs(simulation.network.fogDevices)
-    val networkConfig = getNetworkConfig(simulation.network.fogDevices)
+    val networkConfig = getNetworkConfig(simulation.network.fogDevices, simulation.network.locator)
     val sensorConfigs = getSensorConfigs(simulation.workload.values.first().sensors)
     val actuatorConfigs = getActuatorConfigs(simulation.workload.values.first().actuators)
     val applicationConfig = getApplicationConfig(simulation.workload.values.first().application)
@@ -180,7 +181,7 @@ fun getActuatorConfigs(actuators: List<Actuator>) =
         ).toMap()
     }
 
-fun getNetworkConfig(fogDevices: Map<String, List<FogDevice>>): List<Any> {
+fun getNetworkConfig(fogDevices: Map<String, List<FogDevice>>, locator: LocationHandler): List<Any> {
     val devicesMap = fogDevices
         .flatMap { it.value }
         .associateBy { it.id }
@@ -203,14 +204,25 @@ fun getNetworkConfig(fogDevices: Map<String, List<FogDevice>>): List<Any> {
     }
     return fogDevices.flatMap { (groupId, devices) ->
         devices.map {
-            mapOf(
+            listOfNotNull(
                 "id" to it.id,
                 "name" to it.name,
                 "parent" to it.parentId,
                 "level" to it.level,
                 "group" to groupId,
-                "cluster" to deviceToClusterId[it.id]
-            )
+                "cluster" to deviceToClusterId[it.id],
+                run {
+                    val deviceId = locator.getDataIdByInstanceID(it.id)
+                    val location = locator.dataObject.usersLocation[deviceId]?.values?.last()
+                        ?: locator.dataObject.resourceLocationData[deviceId]
+                    location?.let {
+                        "location" to mapOf(
+                            "lat" to it.latitude,
+                            "lng" to it.longitude
+                        )
+                    }
+                }
+            ).toMap()
         }
     }
 }
@@ -243,7 +255,7 @@ fun getConfigForFogDevice(typeId: String, device: FogDevice): MutableMap<String,
         "costRatePerBandwidth" to device.characteristics.costPerBw,
         "costRatePerStorage" to device.characteristics.costPerStorage,
         (device as? MicroserviceFogDevice)?.let { "microservicesFogDeviceType" to it.deviceType },
-        (device as? MicroserviceFogDevice)?.let { "broadcast" to it.broadcastResults }
+        (device as? MicroserviceFogDevice)?.let { "broadcast" to it.broadcastResults },
     ).toMap().toMutableMap()
 
 fun getApplicationConfig(app: Application) =

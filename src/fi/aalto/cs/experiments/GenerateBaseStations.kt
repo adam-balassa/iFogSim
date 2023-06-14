@@ -23,7 +23,7 @@ import org.fog.utils.distribution.DeterministicDistribution
 
 fun main() {
     // enableDebugLogging()
-    // enableReporting()
+    enableReporting()
     GenerateBaseStations().run()
 }
 
@@ -51,9 +51,10 @@ class GenerateBaseStations {
     private val simulation = Simulation(
         "Road weather with generated base stations",
         object {
-            val numberOfVehiclesPerRU = 8
-            val numberOfRadioUnitsPerParent = 2
+            val numberOfVehiclesPerRU = 6
+            val numberOfRadioUnitsPerParent = 8
             val numberOfProxyServers = 2
+            val assistedBaseStationPlacement = true
             val centralisedPlacement = false
             val randomPlacement = false
             val numberOfRadioUnits get() = numberOfProxyServers * numberOfRadioUnitsPerParent
@@ -96,7 +97,7 @@ class GenerateBaseStations {
             addAppModule(
                 RoadWeatherClassification,
                 ram = 1024,
-                mips = 2500.0,
+                mips = 500.0,
                 storage = 200,
                 selectivityMapping = mapOf(
                     forwarding(NIRCameraImage to RoadWeatherConditions),
@@ -225,7 +226,7 @@ class GenerateBaseStations {
         val cloud = addFogDevice(
             cloud,
             level = FogDeviceLevel.Cloud,
-            mips = 88_800,
+            mips = 888_800,
             ram = 40_000,
             uplinkBandwidth = 100,
             costRatePerMips = 0.001,
@@ -239,10 +240,18 @@ class GenerateBaseStations {
             addProxyServer(cloud.id, location)
         }
 
-        generateAssistedLocations(trafficDataset, config.numberOfRadioUnits).forEach { location ->
+        generateBaseStationLocation(trafficDataset).forEach { location ->
             add5GRadioUnit(location).also {
                 it.parentId = network.locator.determineParent(it.id, SETUP_TIME)
             }
+        }
+    }
+
+    private fun generateBaseStationLocation(dataset: Map<String, List<Location>>) = simulation.run {
+        if (config.assistedBaseStationPlacement) {
+            generateAssistedLocations(dataset, config.numberOfRadioUnits)
+        } else {
+            generateUniformLocations(dataset, config.numberOfRadioUnits)
         }
     }
 }

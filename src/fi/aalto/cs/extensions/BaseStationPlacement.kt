@@ -34,7 +34,7 @@ data class Area(val top: Double, val right: Double, val bottom: Double, val left
         }
     }
 
-    fun randomPoint() = Location(nextDouble() * height, nextDouble() * width, 0)
+    fun randomPoint() = Location(top + nextDouble() * height, left + nextDouble() * width, 0)
 
     fun contains(location: Location) = location.latitude in top..bottom && location.longitude in left..right
 }
@@ -50,13 +50,12 @@ fun generateUniformLocations(trafficDataSet: Map<String, List<Location>>, number
 }
 
 fun generateAssistedLocations(trafficDataSet: Map<String, List<Location>>, numberOfDevices: Int): List<Location> {
-    val locations = trafficDataSet.values.flatten()
-    val area = Area(locations)
+    val area = Area(trafficDataSet.values.flatten())
     val cells = area.cells(
         ceil(sqrt(numberOfDevices.toDouble())).toInt(),
         floor(sqrt(numberOfDevices.toDouble())).toInt()
     )
-    val cellWeights = cells.map { cell -> locations.count { cell.contains(it) } }
+    val cellWeights = cells.map { cell -> trafficDataSet.values.map { it.last() }.count { cell.contains(it) } }
     val weightedCells = cells.zip(cellWeights).flatMap { (cell, weight) -> List(weight) { cell } }
     val chosenCells = weightedCells.sample(numberOfDevices)
     return chosenCells.map { it.randomPoint() }

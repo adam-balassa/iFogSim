@@ -9,13 +9,14 @@
       </SelectButton>
     </div>
     <GeneralConfigTable :config="setup.config" class="pt-3"/>
-    <template v-if="selectedOptions?.includes(1)">
+    <template v-if="selectedOptions?.includes('network')">
       <NetworkGraph :network="setup.network"/>
       <FogDevicesTable :fog-devices="setup.fogDevices" class="pt-3"/>
       <SensorsTable :sensors="setup.sensors" class="pt-3"/>
       <ActuatorsTable :actuators="setup.actuators" class="pt-3"/>
+      <DeviceLocationMap :network="setup.network" class="pt-3"/>
     </template>
-    <template v-if="selectedOptions?.includes(2)">
+    <template v-if="selectedOptions?.includes('application')">
       <ApplicationGraph :application="setup.application" class="pt-3"/>
       <AppModulesTable :app-modules="setup.application.modules" class="pt-3"/>
       <AppEdgeTable :app-edges="setup.application.edges" class="pt-3"/>
@@ -37,15 +38,16 @@ import AppEdgeTable from "./application/app-edge-table.vue";
 import { ref } from "vue";
 import NetworkGraph from "./network/network-graph.vue";
 import TupleCpuLengthChart from "./application/tuple-cpu-length-chart.vue";
+import DeviceLocationMap from "./network/device-location-map.vue";
 
 defineProps<{
   setup: ExperimentDetails['setup']
 }>()
 
-const selectedOptions = ref<number[]>([1, 2])
+const selectedOptions = ref<('network' | 'application')[]>(['network', 'application'])
 const setupOptions = [
-  { name: 'Network', icon: 'pi-sitemap', value: 1 },
-  { name: 'Application', icon: 'pi-box', value: 2 },
+  { name: 'Network', icon: 'pi-sitemap', value: 'network' },
+  { name: 'Application', icon: 'pi-box', value: 'application' },
 ]
 
 </script>

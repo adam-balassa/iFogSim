@@ -168,7 +168,6 @@ public class MicroservicesMobilityClusteringController extends MicroservicesCont
         FogDevice fogDevice = (FogDevice) ev.getData();
         FogDevice prevParent = getFogDeviceById(parentReference.get(fogDevice.getId()));
         FogDevice newParent = getFogDeviceById(locator.determineParent(fogDevice.getId(), CloudSim.clock()));
-        System.out.println(CloudSim.clock() + " Starting Mobility Management for " + fogDevice.getName());
         parentReference.put(fogDevice.getId(), newParent.getId());
         Map<String, Integer> migratingModules = new HashMap<>(); // migrating module _> it's device (can be preParent or  device the same cluster
         setNewOrchestratorNode(fogDevice,newParent);
