@@ -24,10 +24,18 @@ import org.fog.utils.distribution.DeterministicDistribution
 fun main() {
     // enableDebugLogging()
     enableReporting()
-    GenerateBaseStations().run()
+    repeat(5) {
+        GenerateBaseStations("RWA | random BS placement", false).run()
+    }
+    repeat(5) {
+        GenerateBaseStations("RWA | assisted BS placement", true).run()
+    }
 }
 
-class GenerateBaseStations {
+class GenerateBaseStations(
+    name: String,
+    assistedBaseStationPlacement: Boolean,
+) {
     private enum class Modules : ModuleType {
         DriverAssistanceSystem,
         RoadWeatherClassification,
@@ -49,12 +57,12 @@ class GenerateBaseStations {
     }
 
     private val simulation = Simulation(
-        "Road weather with generated base stations",
+        name,
         object {
             val numberOfVehiclesPerRU = 6
             val numberOfRadioUnitsPerParent = 8
             val numberOfProxyServers = 2
-            val assistedBaseStationPlacement = true
+            val assistedBaseStationPlacement = assistedBaseStationPlacement
             val centralisedPlacement = false
             val randomPlacement = false
             val numberOfRadioUnits get() = numberOfProxyServers * numberOfRadioUnitsPerParent
@@ -111,7 +119,7 @@ class GenerateBaseStations {
                 Up,
                 appEdgeType = FromSensor,
                 cpuLength = 500.0,
-                cpuLengthGenerator = poissonNumberGenerator(500.0)
+                cpuLengthGenerator = { logNormal(500.0) }
             )
             addAppEdge(
                 DriverAssistanceSystem,
@@ -119,7 +127,7 @@ class GenerateBaseStations {
                 NIRCameraImage,
                 Up,
                 cpuLength = 5000.0,
-                cpuLengthGenerator = poissonNumberGenerator(5000.0)
+                cpuLengthGenerator = { logNormal(5000.0) }
             )
 
             addAppEdge(
@@ -128,7 +136,7 @@ class GenerateBaseStations {
                 RoadWeatherConditions,
                 Down,
                 cpuLength = 1000.0,
-                cpuLengthGenerator = poissonNumberGenerator(1000.0)
+                cpuLengthGenerator = { logNormal(1000.0) }
             )
             addAppEdge(DriverAssistanceSystem, SpeedControl, EstimatedBreakingDistance, Actuator, appEdgeType = ToActuator, cpuLength = 14.0, dataSize = 1.0)
 
@@ -164,10 +172,10 @@ class GenerateBaseStations {
         addFogDevice(
             Vehicle,
             level = FogDeviceLevel.User,
-            mips = poissonNumber(150).toLong(),
-            ram = poissonNumber(256),
-            downlinkBandwidth = poissonNumber(270).toLong(),
-            uplinkLatency = poissonNumber(2.0, 0.2),
+            mips = logNormal(150.0).toLong(),
+            ram = logNormal(256.0).toInt(),
+            downlinkBandwidth = logNormal(270.0).toLong(),
+            uplinkLatency = logNormal(2.0, 0.2),
             busyPower = 87.53,
             idlePower = 82.44,
             microservicesFogDeviceType = Client
@@ -192,8 +200,8 @@ class GenerateBaseStations {
         addFogDevice(
             FiveGRadioUnit,
             level = Gateway,
-            mips = poissonNumber(4000).toLong(),
-            ram = poissonNumber(2500),
+            mips = logNormal(4000.0).toLong(),
+            ram = logNormal(2500.0).toInt(),
             uplinkLatency = 20.0,
             busyPower = 107.339,
             idlePower = 83.4333,
@@ -208,9 +216,9 @@ class GenerateBaseStations {
             ProxyServer,
             level = Proxy,
             parentId = cloudId,
-            mips = poissonNumber(5000).toLong(),
-            ram = poissonNumber(5000),
-            uplinkLatency = poissonNumber(100.0),
+            mips = logNormal(5000.0).toLong(),
+            ram = logNormal(5000.0).toInt(),
+            uplinkLatency = logNormal(100.0),
             busyPower = 107.339,
             idlePower = 83.4333,
             microservicesFogDeviceType = if (config.centralisedPlacement) FCN else FON,

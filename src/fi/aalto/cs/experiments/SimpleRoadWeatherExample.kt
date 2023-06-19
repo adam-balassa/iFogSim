@@ -111,7 +111,7 @@ class SimpleRoadWeatherExample {
                 Up,
                 appEdgeType = FromSensor,
                 cpuLength = 500.0,
-                cpuLengthGenerator = if (config.stochasticAppEdge) poissonNumberGenerator(500.0, 20.0) else null
+                cpuLengthGenerator = if (config.stochasticAppEdge) { { poisson(500.0, 20.0) } } else null
             )
             addAppEdge(
                 DriverAssistanceSystem,
@@ -119,7 +119,7 @@ class SimpleRoadWeatherExample {
                 NIRCameraImage,
                 Up,
                 cpuLength = 5000.0,
-                cpuLengthGenerator = if (config.stochasticAppEdge) poissonNumberGenerator(5000.0, 40.0) else null
+                cpuLengthGenerator = if (config.stochasticAppEdge) { { poisson(5000.0, 40.0) } } else null
             )
 
             addAppEdge(
@@ -128,7 +128,7 @@ class SimpleRoadWeatherExample {
                 RoadWeatherConditions,
                 Down,
                 cpuLength = 1000.0,
-                cpuLengthGenerator = if (config.stochasticAppEdge) poissonNumberGenerator(1000.0, 30.0) else null
+                cpuLengthGenerator = if (config.stochasticAppEdge) { { poisson(1000.0, 30.0) } } else null
             )
             addAppEdge(DriverAssistanceSystem, SpeedControl, EstimatedBreakingDistance, Actuator, appEdgeType = ToActuator, cpuLength = 14.0, dataSize = 1.0)
 

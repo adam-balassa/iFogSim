@@ -102,7 +102,7 @@ class RoadWeatherHeterogeneousNetwork {
                 Up,
                 appEdgeType = FromSensor,
                 cpuLength = 500.0,
-                cpuLengthGenerator = poissonNumberGenerator(500.0)
+                cpuLengthGenerator = { poisson(500.0) }
             )
             addAppEdge(
                 DriverAssistanceSystem,
@@ -110,7 +110,7 @@ class RoadWeatherHeterogeneousNetwork {
                 NIRCameraImage,
                 Up,
                 cpuLength = 5000.0,
-                cpuLengthGenerator = poissonNumberGenerator(5000.0)
+                cpuLengthGenerator = { poisson(5000.0) }
             )
 
             addAppEdge(
@@ -119,7 +119,7 @@ class RoadWeatherHeterogeneousNetwork {
                 RoadWeatherConditions,
                 Down,
                 cpuLength = 1000.0,
-                cpuLengthGenerator = poissonNumberGenerator(1000.0)
+                cpuLengthGenerator = { poisson(1000.0) }
             )
             addAppEdge(DriverAssistanceSystem, SpeedControl, EstimatedBreakingDistance, Actuator, appEdgeType = ToActuator, cpuLength = 14.0, dataSize = 1.0)
 
@@ -137,11 +137,11 @@ class RoadWeatherHeterogeneousNetwork {
         val vehicle = addFogDevice(
             Vehicle,
             level = FogDeviceLevel.User,
-            mips = poissonNumber(150).toLong(),
-            ram = poissonNumber(256),
+            mips = poisson(150.0).toLong(),
+            ram = poisson(256.0).toInt(),
             parentId = connectedRadioUnit,
-            downlinkBandwidth = poissonNumber(270).toLong(),
-            uplinkLatency = poissonNumber(2.0, 0.2),
+            downlinkBandwidth = poisson(270.0).toLong(),
+            uplinkLatency = poisson(2.0, 0.2),
             busyPower = 87.53,
             idlePower = 82.44,
             microservicesFogDeviceType = Client
@@ -167,8 +167,8 @@ class RoadWeatherHeterogeneousNetwork {
             FiveGRadioUnit,
             level = Gateway,
             parentId = parentNodeId,
-            mips = poissonNumber(4000).toLong(),
-            ram = poissonNumber(2500),
+            mips = poisson(4000.0).toLong(),
+            ram = poisson(2500.0).toInt(),
             uplinkLatency = latency,
             busyPower = 107.339,
             idlePower = 83.4333,
@@ -186,15 +186,15 @@ class RoadWeatherHeterogeneousNetwork {
             ProxyServer,
             level = Proxy,
             parentId = cloudId,
-            mips = poissonNumber(5000).toLong(),
-            ram = poissonNumber(5000),
-            uplinkLatency = poissonNumber(100.0),
+            mips = poisson(5000.0).toLong(),
+            ram = poisson(5000.0).toInt(),
+            uplinkLatency = poisson(100.0),
             busyPower = 107.339,
             idlePower = 83.4333,
             microservicesFogDeviceType = if (config.centralisedPlacement) FCN else FON
         ).let {
             for (i in 0 until config.numberOfRadioUnitsPerParent) {
-                add5GRadioUnit(it.id, poissonNumber(20.0))
+                add5GRadioUnit(it.id, poisson(20.0))
             }
         }
     }
@@ -218,7 +218,7 @@ class RoadWeatherHeterogeneousNetwork {
             }
         } else {
             for (i in 0 until config.numberOfRadioUnitsPerParent) {
-                add5GRadioUnit(cloudId, poissonNumber(100.0))
+                add5GRadioUnit(cloudId, poisson(100.0))
             }
         }
     }
