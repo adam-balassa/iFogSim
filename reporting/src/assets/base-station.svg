@@ -1,9 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1"
      width="50"
-     viewBox="-7 -4 40 40">
+     height="50"
+     viewBox="-13 -5 44 44">
     <defs/>
     <g>
-        <circle cx="9" cy="17" r="18" fill="white"/>
+        <circle cx="9" cy="17" r="21" fill="white" stroke="currentColor"/>
         <path d="M 1.99 31.45 L 9 5.64 L 16.01 31.45" fill="none" stroke="currentColor" stroke-width="0.63"
                 pointer-events="all"/>
         <path d="M 15.69 29.73 L 3.9 24.57 L 13.14 21.13 L 5.97 17.68 L 11.23 14.4 L 7.57 11.43" fill="none"

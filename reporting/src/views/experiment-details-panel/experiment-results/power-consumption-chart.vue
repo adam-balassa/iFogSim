@@ -14,8 +14,8 @@ import Chart from 'primevue/chart';
 import {ExperimentResults} from "../../../types/types";
 import {computed} from "vue";
 import _ from "lodash";
-import {CDF} from "../../../utils/helpers";
 import {ChartData} from "chart.js";
+import { CDF } from "@/utils/stats";
 
 const props = defineProps<{
   powerConsumptions: ExperimentResults['fogDeviceEnergyConsumptions']

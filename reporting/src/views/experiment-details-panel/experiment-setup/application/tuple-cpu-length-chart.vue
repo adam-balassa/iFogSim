@@ -9,7 +9,7 @@
 import Chart from 'primevue/chart';
 import { computed } from "vue";
 import { ChartData } from "chart.js";
-import { countBy, identity } from "lodash";
+import { histogram } from "@/utils/stats";
 
 const props = defineProps<{
   tupleTypeCpuLength: { [tupleType: string]: number[] }
@@ -18,7 +18,7 @@ const props = defineProps<{
 const chartData = computed<ChartData<'scatter'>>(() => ({
   datasets: Object.entries(props.tupleTypeCpuLength).map(([tupleType, cpuLengths]) => ({
     label: tupleType,
-    data: Object.entries(countBy(cpuLengths, identity)).map(([x, y]) => ({ x: +x, y })),
+    data: histogram(cpuLengths, 20.0).map(([x, y]) => ({ x, y })),
     showLine: true,
     tension: .1
   }))

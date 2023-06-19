@@ -50,11 +50,31 @@ export interface ExperimentResults {
   }
 }
 
+export interface AggregateExperimentResults {
+  executionTime: number[];
+  networkUsage: number[];
+  migrationDelay: number[];
+  appLoopLatencies: {
+    appLoop: string[];
+    avgLatency: number[];
+    latencies:  number[][];
+  }[];
+}
+
 export interface ExperimentDetails {
+  type: 'single';
   app: string;
   experiment: string;
   setup: ExperimentSetup;
   results: ExperimentResults;
+}
+
+export interface AggregateExperimentDetails {
+  type: 'aggregate';
+  app: string;
+  experiment: string;
+  setup: ExperimentSetup;
+  results: AggregateExperimentResults;
 }
 
 export type ExperimentListing = {

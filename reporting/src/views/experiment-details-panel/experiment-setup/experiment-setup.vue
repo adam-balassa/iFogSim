@@ -10,11 +10,11 @@
     </div>
     <GeneralConfigTable :config="setup.config" class="pt-3"/>
     <template v-if="selectedOptions?.includes('network')">
-      <NetworkGraph :network="setup.network"/>
+      <NetworkGraph v-if="type === 'single'" :network="setup.network"/>
       <FogDevicesTable :fog-devices="setup.fogDevices" class="pt-3"/>
       <SensorsTable :sensors="setup.sensors" class="pt-3"/>
       <ActuatorsTable :actuators="setup.actuators" class="pt-3"/>
-      <DeviceLocationMap :network="setup.network" class="pt-3"/>
+      <DeviceLocationMap v-if="setup.network.some(d => d.location)" :network="setup.network" class="pt-3"/>
     </template>
     <template v-if="selectedOptions?.includes('application')">
       <ApplicationGraph :application="setup.application" class="pt-3"/>
@@ -27,7 +27,7 @@
 
 <script setup lang="ts">
 import SelectButton from "primevue/selectbutton";
-import { ExperimentDetails } from "../../../types/types";
+import { ExperimentDetails } from "@/types/types";
 import FogDevicesTable from "./network/fog-devices-table.vue";
 import GeneralConfigTable from "./general-config-table.vue";
 import SensorsTable from "./network/sensors-table.vue";
@@ -41,7 +41,8 @@ import TupleCpuLengthChart from "./application/tuple-cpu-length-chart.vue";
 import DeviceLocationMap from "./network/device-location-map.vue";
 
 defineProps<{
-  setup: ExperimentDetails['setup']
+  setup: ExperimentDetails['setup'],
+  type: 'single' | 'aggregate'
 }>()
 
 const selectedOptions = ref<('network' | 'application')[]>(['network', 'application'])

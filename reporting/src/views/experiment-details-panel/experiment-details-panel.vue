@@ -9,14 +9,21 @@
             <i class="pi pi-sliders-h mr-3"></i>
             <span>Setup</span>
           </template>
-          <ExperimentSetup :setup="selectedExperiment.setup"/>
+          <ExperimentSetup :setup="selectedExperiment.setup" :type="selectedExperiment.type"/>
         </TabPanel>
-        <TabPanel>
+        <TabPanel v-if="selectedExperiment.type === 'single'">
           <template #header>
             <i class="pi pi-chart-bar mr-3"></i>
             <span>Results</span>
           </template>
           <ExperimentResults :results="selectedExperiment.results" :setup="selectedExperiment.setup"/>
+        </TabPanel>
+        <TabPanel v-else>
+          <template #header>
+            <i class="pi pi-chart-bar mr-3"></i>
+            <span>Aggregate</span>
+          </template>
+          <AggregateResults :experiments="selectedExperiment" />
         </TabPanel>
       </TabView>
     </template>
@@ -29,6 +36,7 @@ import TabPanel from "primevue/tabpanel";
 import ExperimentSetup from "./experiment-setup/experiment-setup.vue";
 import useSelectedExperiment from "../use-selected-experiment";
 import ExperimentResults from "./experiment-results/experiment-results.vue";
+import AggregateResults from "@/views/experiment-details-panel/aggregate-results/aggregate-results.vue";
 
 const { selectedExperiment } = useSelectedExperiment()
 

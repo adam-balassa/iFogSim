@@ -2,13 +2,14 @@
   <div class="overflow-y-auto max-h-screen">
     <Tree
       class="tree-navigation"
-      selection-mode="single"
+      selection-mode="multiple"
+      meta-key-selection
       :value="experimentNodes"
       v-model:selection-keys="selectedKeys"
+      @update:selection-keys="onSelect"
       v-model:expanded-keys="expandedKeys"
       :filter="true"
       filterMode="lenient"
-      @node-select="onSelectExperiment"
     />
   </div>
 </template>
@@ -17,9 +18,10 @@
 import Tree, { TreeExpandedKeys, TreeNode, TreeSelectionKeys } from 'primevue/tree';
 import useListExperiments from "./use-list-experiments";
 import { computed, ref, watch } from "vue";
-import useSelectedExperiment from "../use-selected-experiment";
+import useSelectedExperiment, { experimentId, idToExperiment } from "../use-selected-experiment";
 import _ from "lodash";
-import { ExperimentListing } from "../../types/types";
+import { ExperimentListing } from "@/types/types";
+import { confidenceInterval } from "@/utils/stats";
 
 const { experiments } = useListExperiments()
 const { selectedExperiment, selectExperiment } = useSelectedExperiment()
@@ -32,7 +34,7 @@ const experimentNodes = computed<TreeNode[] | undefined>(() => experiments.value
   icon: 'pi pi-fw pi-box',
   selectable: false,
   children: app.experiments.map(experiment => ({
-    key: experiment,
+    key: experimentId({ app: app.app, experiment }),
     label: experiment,
     type: app.app,
     icon: 'pi pi-fw pi-file',
@@ -43,9 +45,9 @@ const experimentNodes = computed<TreeNode[] | undefined>(() => experiments.value
 
 watch(experiments, nextExperiments => {
   if (nextExperiments?.length && nextExperiments[0].experiments.length && !selectedExperiment.value) {
-    const { app, experiment } = defaultExperiment(nextExperiments)
-    select(app, experiment)
-    expandedKeys.value = { [app]: true }
+    const experiment = defaultExperiment(nextExperiments)
+    select(experiment)
+    expandedKeys.value = { [experiment.app]: true }
   }
 })
 
@@ -56,16 +58,18 @@ function defaultExperiment(listing: ExperimentListing) {
       .last()!!
 }
 
-function select(app: string, experiment: string) {
-  selectedKeys.value = { [experiment]: true }
-  selectExperiment(app, experiment)
+function select(id: { app: string, experiment: string }) {
+  selectedKeys.value = { [experimentId(id)]: true }
+  selectExperiment([id])
 }
 
-function onSelectExperiment(node: TreeNode) {
-  if (node.type && node.key) {
-    selectExperiment(node.type, node.key)
-  }
+function onSelect(experimentIds: TreeSelectionKeys) {
+  selectExperiment(Object.entries(experimentIds)
+    .filter(([_, isSelected]) => isSelected)
+    .map(([id]) => id)
+    .map(idToExperiment))
 }
+
 
 </script>
 
