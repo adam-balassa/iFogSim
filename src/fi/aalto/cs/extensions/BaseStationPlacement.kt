@@ -3,7 +3,6 @@ package fi.aalto.cs.extensions
 import fi.aalto.cs.utils.sample
 import org.fog.mobilitydata.Location
 import kotlin.math.ceil
-import kotlin.math.floor
 import kotlin.math.sqrt
 import kotlin.random.Random.Default.nextDouble
 
@@ -41,20 +40,16 @@ data class Area(val top: Double, val right: Double, val bottom: Double, val left
 
 fun generateUniformLocations(trafficDataSet: Map<String, List<Location>>, numberOfDevices: Int): List<Location> {
     val area = Area(trafficDataSet.values.flatten())
-    val cells = area.cells(
-        ceil(sqrt(numberOfDevices.toDouble())).toInt(),
-        floor(sqrt(numberOfDevices.toDouble())).toInt()
-    )
+    val gridDensity = ceil(sqrt(numberOfDevices.toDouble())).toInt()
+    val cells = area.cells(gridDensity, gridDensity)
     val chosenCells = cells.sample(numberOfDevices)
     return chosenCells.map { it.randomPoint() }
 }
 
 fun generateAssistedLocations(trafficDataSet: Map<String, List<Location>>, numberOfDevices: Int): List<Location> {
     val area = Area(trafficDataSet.values.flatten())
-    val cells = area.cells(
-        ceil(sqrt(numberOfDevices.toDouble())).toInt(),
-        floor(sqrt(numberOfDevices.toDouble())).toInt()
-    )
+    val gridDensity = ceil(sqrt(numberOfDevices.toDouble())).toInt()
+    val cells = area.cells(gridDensity, gridDensity)
     val cellWeights = cells.map { cell -> trafficDataSet.values.map { it.last() }.count { cell.contains(it) } }
     val weightedCells = cells.zip(cellWeights).flatMap { (cell, weight) -> List(weight) { cell } }
     val chosenCells = weightedCells.sample(numberOfDevices)

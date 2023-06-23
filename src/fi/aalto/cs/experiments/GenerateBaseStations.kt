@@ -24,11 +24,11 @@ import org.fog.utils.distribution.DeterministicDistribution
 fun main() {
     // enableDebugLogging()
     enableReporting()
-    repeat(5) {
-        GenerateBaseStations("RWA | random BS placement", false).run()
-    }
-    repeat(5) {
+    repeat(6) {
         GenerateBaseStations("RWA | assisted BS placement", true).run()
+    }
+    repeat(6) {
+        GenerateBaseStations("RWA | random BS placement", false).run()
     }
 }
 
@@ -95,7 +95,7 @@ class GenerateBaseStations(
             addAppModule(
                 DriverAssistanceSystem,
                 ram = 128,
-                mips = 100.0,
+                mips = 250.0,
                 storage = 100,
                 selectivityMapping = mapOf(
                     forwarding(NIRCamera to NIRCameraImage),
@@ -105,7 +105,7 @@ class GenerateBaseStations(
             addAppModule(
                 RoadWeatherClassification,
                 ram = 1024,
-                mips = 500.0,
+                mips = 150.0,
                 storage = 200,
                 selectivityMapping = mapOf(
                     forwarding(NIRCameraImage to RoadWeatherConditions),
@@ -118,8 +118,8 @@ class GenerateBaseStations(
                 NIRCamera,
                 Up,
                 appEdgeType = FromSensor,
-                cpuLength = 500.0,
-                cpuLengthGenerator = { logNormal(500.0) }
+                cpuLength = 300.0,
+                cpuLengthGenerator = { logNormal(300.0) }
             )
             addAppEdge(
                 DriverAssistanceSystem,
@@ -135,8 +135,8 @@ class GenerateBaseStations(
                 DriverAssistanceSystem,
                 RoadWeatherConditions,
                 Down,
-                cpuLength = 1000.0,
-                cpuLengthGenerator = { logNormal(1000.0) }
+                cpuLength = 800.0,
+                cpuLengthGenerator = { logNormal(800.0) }
             )
             addAppEdge(DriverAssistanceSystem, SpeedControl, EstimatedBreakingDistance, Actuator, appEdgeType = ToActuator, cpuLength = 14.0, dataSize = 1.0)
 
@@ -172,10 +172,10 @@ class GenerateBaseStations(
         addFogDevice(
             Vehicle,
             level = FogDeviceLevel.User,
-            mips = logNormal(150.0).toLong(),
+            mips = logNormal(350.0).toLong(),
             ram = logNormal(256.0).toInt(),
             downlinkBandwidth = logNormal(270.0).toLong(),
-            uplinkLatency = logNormal(2.0, 0.2),
+            uplinkLatency = logNormal(2.0),
             busyPower = 87.53,
             idlePower = 82.44,
             microservicesFogDeviceType = Client
@@ -200,9 +200,9 @@ class GenerateBaseStations(
         addFogDevice(
             FiveGRadioUnit,
             level = Gateway,
-            mips = logNormal(4000.0).toLong(),
+            mips = logNormal(3550.0).toLong(),
             ram = logNormal(2500.0).toInt(),
-            uplinkLatency = 20.0,
+            uplinkLatency = logNormal(60.0),
             busyPower = 107.339,
             idlePower = 83.4333,
             microservicesFogDeviceType = FCN,
@@ -216,7 +216,7 @@ class GenerateBaseStations(
             ProxyServer,
             level = Proxy,
             parentId = cloudId,
-            mips = logNormal(5000.0).toLong(),
+            mips = logNormal(8000.0).toLong(),
             ram = logNormal(5000.0).toInt(),
             uplinkLatency = logNormal(100.0),
             busyPower = 107.339,
@@ -234,7 +234,7 @@ class GenerateBaseStations(
         val cloud = addFogDevice(
             cloud,
             level = FogDeviceLevel.Cloud,
-            mips = 888_800,
+            mips = 50_000,
             ram = 40_000,
             uplinkBandwidth = 100,
             costRatePerMips = 0.001,

@@ -117,14 +117,15 @@ fun Workload.addAppEdge(
 /**
  * Constructs a FogDevice and adds it to the simulation environment
  * @param type Name of the fog device is derived from the type
- * @param mips CPU frequency in Million instructions per second
+ * @param mips CPU frequency in "million instructions per second"
  * @param ram Memory capacity of the device in MB
  * @param parentId The parent fog device in the network topology tree
  * @param level Indicates the level of the fog device in the network topology tree
  * @param storage Storage capacity of the device in MB
- * @param uplinkBandwidth Bandwidth of the up-link port of the device in Mbps
- * @param downlinkBandwidth Bandwidth of the down-link port of the device in Mbps
- * @param clusterLinkBandwidth Bandwidth between cluster nodes in Mbps
+ * @param bandwidth Simulated bandwidth of the device in Mbps
+ * @param uplinkBandwidth Bandwidth of the up-link port of the device in Mbps - only used for tuple-forwarding latency calculation
+ * @param downlinkBandwidth Bandwidth of the down-link port of the device in Mbps - only used for tuple-forwarding latency calculation
+ * @param clusterLinkBandwidth Bandwidth between cluster nodes in Mbps - only used for tuple-forwarding latency calculation
  * @param uplinkLatency Latency of the up-link connection in milliseconds
  * @param schedulingInterval How often should the VM scheduling logic run in the host (ms)
  * @param busyPower Power consumption when the device is performing computation in MJ/s
@@ -137,14 +138,14 @@ fun Workload.addAppEdge(
  */
 fun <T> Simulation<T>.addFogDevice(
     type: FogDeviceType,
-    mips: Long, // million CPU instructions/s
-    ram: Int, // MB
+    mips: Long,
+    ram: Int,
     parentId: Int? = null,
     level: FogDeviceLevel = FogDeviceLevel.Proxy,
     storage: Long = 1_000_000, // MB
     bandwidth: Long = 10_000,
-    uplinkBandwidth: Long = 10_000,
-    downlinkBandwidth: Long = 10_000,
+    uplinkBandwidth: Long = bandwidth,
+    downlinkBandwidth: Long = bandwidth,
     clusterLinkBandwidth: Long = 10_000,
     uplinkLatency: Double = 0.0, // ms
     schedulingInterval: Double = 10.0,
