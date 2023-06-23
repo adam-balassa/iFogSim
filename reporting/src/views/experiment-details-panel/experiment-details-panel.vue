@@ -3,7 +3,7 @@
     <template v-if="selectedExperiment">
       <h1 class="font-normal mb-2">{{ selectedExperiment.app }}</h1>
       <h2 class="text-color-secondary font-light mt-0">{{ selectedExperiment.experiment }}</h2>
-      <TabView>
+      <TabView lazy>
         <TabPanel>
           <template #header>
             <i class="pi pi-sliders-h mr-3"></i>

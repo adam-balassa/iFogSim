@@ -5,7 +5,7 @@ import {
   ExperimentDetails,
   ExperimentSetup
 } from "@/types/types";
-import { uniq } from "lodash";
+import _, { uniq } from "lodash";
 import { mean } from "@/utils/stats";
 import { zipSafe } from "@/utils/zip";
 
@@ -35,8 +35,21 @@ export function aggregateExperiment(experiments: ExperimentDetails[]): Aggregate
         latencies:  latencies.map(l => l.latencies),
       })
     ),
+    tupleExecutionLatencies: _(experiments.flatMap(e => e.results.tupleExecutionLatencies))
+      .groupBy(t => t.tuple)
+      .map((measurements, tuple) => ({
+        tuple,
+        cpuTime: measurements.map(m => m.cpuTime)
+      }))
+      .value(),
+    executionLevels: _(experiments.map(e => e.results.executionLevels))
+      .reduce((acc, next) => {
+        next && Object.entries(next).forEach(([tupleType, levels]) => {
+          acc[tupleType] = [...(acc[tupleType] ?? []), ...levels]
+        })
+        return acc
+      }, {} as { [tupleType: string]: string[] })
   }
-  console.log(setup, results)
   return {
     type: 'aggregate',
     setup,

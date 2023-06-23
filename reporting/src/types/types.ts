@@ -59,6 +59,13 @@ export interface AggregateExperimentResults {
     avgLatency: number[];
     latencies:  number[][];
   }[];
+  tupleExecutionLatencies: {
+    tuple: string;
+    cpuTime: number[]
+  }[];
+  executionLevels?: {
+    [tupleType: string]: string[]
+  }
 }
 
 export interface ExperimentDetails {

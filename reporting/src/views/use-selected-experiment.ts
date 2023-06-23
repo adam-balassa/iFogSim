@@ -2,6 +2,7 @@ import { computed, ref } from "vue";
 import { AggregateExperimentDetails, ExperimentDetails } from "@/types/types";
 import useFetchExperimentDetails from "./use-fetch-experiment-details";
 import { aggregateExperiment } from "@/views/aggregate-experiment";
+import { debounce } from "lodash";
 
 const experimentDetails = new Map<string, ExperimentDetails>()
 const selectedExperiment = ref<ExperimentDetails | AggregateExperimentDetails | null>(null)
@@ -30,15 +31,22 @@ export default function useSelectedExperiment() {
     }
   }
 
-  async function selectExperiment(selection: { app: string, experiment: string }[]) {
+  const setSelectedExperiment = debounce((value: ExperimentDetails | AggregateExperimentDetails | null) => {
+    selectedExperiment.value = value
+  }, 500)
+
+  async function selectExperiment(selection: { app: string, experiment: string }[], noDebounce: boolean) {
     const experiments = await Promise.all(selection.map(loadExperiment))
     if (experiments.length === 0) {
       return
     }
     if (experiments.length === 1) {
-      selectedExperiment.value = experiments[0]
+      setSelectedExperiment(experiments[0])
     } else {
-      selectedExperiment.value = aggregateExperiment(experiments)
+      setSelectedExperiment(aggregateExperiment(experiments))
+    }
+    if (noDebounce) {
+      setSelectedExperiment.flush()
     }
   }
 

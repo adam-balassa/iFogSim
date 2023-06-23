@@ -60,14 +60,15 @@ function defaultExperiment(listing: ExperimentListing) {
 
 function select(id: { app: string, experiment: string }) {
   selectedKeys.value = { [experimentId(id)]: true }
-  selectExperiment([id])
+  selectExperiment([id], true)
 }
 
 function onSelect(experimentIds: TreeSelectionKeys) {
-  selectExperiment(Object.entries(experimentIds)
+  const experiments = Object.entries(experimentIds)
     .filter(([_, isSelected]) => isSelected)
     .map(([id]) => id)
-    .map(idToExperiment))
+    .map(idToExperiment)
+  selectExperiment(experiments, experiments.length === 1)
 }
 
 
