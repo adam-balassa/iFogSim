@@ -15,7 +15,7 @@
       :max-fraction-digits="3"
       @update:model-value="p => qosLatency = nextLatency(p)"/>
   </Panel>
-  <Chart class="w-full" type="scatter" :data="datasets"/>
+  <Chart class="w-full" type="scatter" :data="datasets" :options="{interaction: { mode: 'x' }}"/>
 </template>
 
 <script setup lang="ts">

@@ -25,17 +25,19 @@ export function confidenceInterval(sample: number[], alpha: number = 0.9): [numb
 }
 
 export function CDF(data: number[]): { x: number, y: number }[] {
-  const acc: { x: number, y: number }[] = []
-  data.sort((a, b) => a - b).reduce<number>((currentCount, nextValue) => {
-    acc.push({x: nextValue, y: (currentCount + 1)})
-    return currentCount + 1;
-  }, 0)
-  return acc
+  const min = _.min(data)!
+  const max = _.max(data)!
+  const points = 100
+  const step = Math.ceil((max - min) / points)
+  data.sort((a, b) => a - b)
+  const X = Array.from({length: Math.floor((max - min) / step)}, (_, i) => Math.ceil(min) + i * step)
+  return X.map(x => ({ x, y: data.findIndex(el => el >= x)! }))
 }
 
-export function histogram(arr: number[], numberOfBins = 10): [number, number][] {
+export function histogram(arr: number[], numberOfBins = 20): [number, number][] {
+  arr.sort((a, b) => a - b)
   const discreteHist = discreteHistogram(arr)
-  if (discreteHist.filter(([, count]) => count > 1).length > 5) {
+  if (discreteHist.filter(([, count]) => count > 1).length > 5 && discreteHist.length < 100) {
     return discreteHist
   }
 
@@ -45,7 +47,20 @@ export function histogram(arr: number[], numberOfBins = 10): [number, number][] 
   const bins = new Array<number>(numberOfBins).fill(0);
   const binWidth = range / numberOfBins
   arr.forEach((el) => bins[Math.floor((el - min) / binWidth)]++);
-  const partitions = new Array(numberOfBins).fill(0).map((_, i) => min + i * binWidth / 2)
+  const partitions = new Array(numberOfBins).fill(0).map((_, i) => min + i * binWidth)
+  return zipSafe(partitions, bins);
+}
+
+export function bins<T extends { num: number }>(arr: T[], numberOfBins = 10): [number, T[]][] {
+  const max = Math.max(...arr.map(el => el.num));
+  const min = Math.min(...arr.map(el => el.num));
+  const range = max - min + 1;
+  const bins = new Array(numberOfBins).fill(0).map<T[]>(() => [])
+  const binWidth = range / numberOfBins
+  arr.forEach((el) => {
+    bins[Math.floor((el.num - min) / binWidth)].push(el)
+  });
+  const partitions = new Array(numberOfBins).fill(0).map((_, i) => min + i * binWidth)
   return zipSafe(partitions, bins);
 }
 

@@ -23,6 +23,13 @@ export function aggregateExperiment(experiments: ExperimentDetails[]): Aggregate
       return networkSettings
     }))),
     sensors: aggregateConfigs(experiments.map(e => e.setup.sensors)),
+    tupleTypeToCpuLength: _(experiments.map(e => e.setup.tupleTypeToCpuLength))
+      .reduce((acc, next) => {
+        next && Object.entries(next).forEach(([tupleType, cpuLengths]) => {
+          acc[tupleType] = [...(acc[tupleType] ?? []), ...cpuLengths]
+        })
+        return acc
+      }, {} as { [tupleType: string]: number[] })
   }
   const results: AggregateExperimentResults = {
     executionTime: experiments.map(e => e.results.executionTime),
@@ -48,7 +55,7 @@ export function aggregateExperiment(experiments: ExperimentDetails[]): Aggregate
           acc[tupleType] = [...(acc[tupleType] ?? []), ...levels]
         })
         return acc
-      }, {} as { [tupleType: string]: string[] })
+      }, {} as { [tupleType: string]: (string | [string, number])[] })
   }
   return {
     type: 'aggregate',
@@ -64,10 +71,15 @@ function aggregateConfigs<T extends Config>(configs: T[][]): T[] {
 }
 
 function aggregateConfig(configs: Config[]): Config {
-  return zipSafe(...configs.map(c => Object.entries(c)))
-    .reduce<Config>((config, zipped) => {
-      return { ...config, [zipped[0][0]]: aggregateConfigValue(zipped.map(([, values]) => values)) }
-    }, {})
+  const aggregatedEntries = _(configs)
+    .flatMap(c => Object.entries(c))
+    .groupBy(([key]) => key)
+    .mapValues((values) => values.map(([,value]) => value))
+    .mapValues((values) => aggregateConfigValue(values))
+    .entries()
+    .value()
+
+  return Object.fromEntries(aggregatedEntries)
 }
 
 function aggregateConfigValue<T extends Config[keyof Config]>(value: T[]): T {

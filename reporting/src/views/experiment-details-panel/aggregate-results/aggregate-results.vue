@@ -3,7 +3,13 @@
     <ResultsSummaryTable :results="experiments.results" class="pt-3"/>
     <TupleExecutionTable :tuple-executions="experiments.results.tupleExecutionLatencies" class="pt-3"/>
     <ExecutionLevelsChart
-      v-if="experiments.results.executionLevels"
+      v-if="experiments.results.executionLevels && areSimpleExecutionLevels(experiments.results.executionLevels)"
+      :execution-levels="experiments.results.executionLevels"
+      :levels="experiments.setup.fogDevices"
+      class="pt-3"
+    />
+    <TemporalExecutionLevelsChart
+      v-if="experiments.results.executionLevels && areTemporalExecutionLevels(experiments.results.executionLevels)"
       :execution-levels="experiments.results.executionLevels"
       :levels="experiments.setup.fogDevices"
       class="pt-3"
@@ -24,6 +30,9 @@ import AppLoopLatenciesTable from "./app-loop-latencies-table.vue";
 import TupleExecutionTable from "./tuple-execution-table.vue";
 import ExecutionLevelsChart from "@/views/experiment-details-panel/experiment-results/execution-levels-chart.vue";
 import AppLoopLatenciesChart from "@/views/experiment-details-panel/aggregate-results/app-loop-latencies-chart.vue";
+import TemporalExecutionLevelsChart
+  from "@/views/experiment-details-panel/experiment-results/temporal-execution-levels-chart.vue";
+import { areSimpleExecutionLevels, areTemporalExecutionLevels } from "@/utils/helpers";
 
 defineProps<{
   experiments: AggregateExperimentDetails

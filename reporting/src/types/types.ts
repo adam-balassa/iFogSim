@@ -46,7 +46,7 @@ export interface ExperimentResults {
     energy: number;
   }[];
   executionLevels?: {
-    [tupleType: string]: string[]
+    [tupleType: string]: string[] | [string, number][]
   }
 }
 
@@ -64,7 +64,7 @@ export interface AggregateExperimentResults {
     cpuTime: number[]
   }[];
   executionLevels?: {
-    [tupleType: string]: string[]
+    [tupleType: string]: (string | [string, number])[]
   }
 }
 
