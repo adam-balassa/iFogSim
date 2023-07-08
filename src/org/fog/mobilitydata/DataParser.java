@@ -1,5 +1,7 @@
 package org.fog.mobilitydata;
 
+import org.fog.utils.Logger;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -65,7 +67,7 @@ public class DataParser {
 
             Map<Double, Location> tempUserLocationInfo = new HashMap<Double, Location>();
             BufferedReader csvReader = new BufferedReader(new FileReader(datasetReference + userID + ".csv"));
-            System.out.println("The Mobility dataset used in this simulation for user: " + userID + " is: " + datasetReference + userID + ".csv");
+            Logger.debug("USER DATA", "The Mobility dataset used in this simulation for user: " + userID + " is: " + datasetReference + userID + ".csv");
             String row;
             double eventTime = References.INIT_TIME;
             while ((row = csvReader.readLine()) != null) {

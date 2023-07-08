@@ -1,6 +1,6 @@
 package fi.aalto.cs.extensions
 
-object E2ELatencyMonitor {
+object E2ELatencyMonitor : Monitor {
     val loopIdToLatencies = mutableMapOf<Int, MutableList<Double>>()
 
     fun registerE2ELatency(loopId: Int, latency: Double) {
@@ -9,5 +9,9 @@ object E2ELatencyMonitor {
         } else {
             loopIdToLatencies[loopId] = mutableListOf(latency)
         }
+    }
+
+    override fun clear() {
+        loopIdToLatencies.clear()
     }
 }

@@ -1,9 +1,7 @@
 package fi.aalto.cs.utils
 
 import com.google.gson.GsonBuilder
-import fi.aalto.cs.extensions.E2ELatencyMonitor
-import fi.aalto.cs.extensions.ExecutionLevelMonitor
-import fi.aalto.cs.extensions.StochasticAppEdge
+import fi.aalto.cs.extensions.*
 import org.cloudbus.cloudsim.Pe
 import org.fog.application.Application
 import org.fog.entities.Actuator
@@ -53,6 +51,7 @@ fun <T> reportSimulationResults(simulation: Simulation<T>): Map<String, Any> {
     val networkUsage = NetworkUsageMonitor.getNetworkUsage() / Config.MAX_SIMULATION_TIME
     val migrationDelay = MigrationDelayMonitor.getMigrationDelay()
     val executionLevels = getExecutionLevels(simulation.workload.values)
+    val waitingTuples = getWaitingTuples(BandwidthMonitor.waitingTuples)
 
     return mapOf(
         "executionTime" to executionTime,
@@ -62,10 +61,19 @@ fun <T> reportSimulationResults(simulation: Simulation<T>): Map<String, Any> {
         "tupleExecutionLatencies" to tupleExecutionLatencies,
         "fogDeviceEnergyConsumptions" to fogDeviceEnergyConsumptions,
         "executionLevels" to executionLevels,
+        "waitingTuples" to waitingTuples,
     )
 }
 
-private fun getExecutionLevels(workloads: Collection<Workload>): Map<String, List<String>> {
+private fun getWaitingTuples(waitingTuples: List<WaitingTuple>): Map<String, Map<Any, Double>> =
+    mapOf(
+        "byTupleType" to waitingTuples.groupBy { it.tupleType }.mapValues { (_, values) -> values.sumOf { it.waitTime } / values.size }.toMap(),
+        "byDeviceId" to waitingTuples.groupBy { it.deviceId }.mapValues { (_, values) -> values.sumOf { it.waitTime } / values.size }.toMap(),
+        "byLevel" to waitingTuples.groupBy { it.level }.mapValues { (_, values) -> values.sumOf { it.waitTime } / values.size }.toMap(),
+        "byDirection" to waitingTuples.groupBy { it.uplink }.mapValues { (_, values) -> values.sumOf { it.waitTime } / values.size }.toMap()
+    )
+
+private fun getExecutionLevels(workloads: Collection<Workload>): Map<String, List<List<Any>>> {
     val applications = workloads.groupBy { it.name }
     return ExecutionLevelMonitor.tupleTypeToExecutionLevel.entries.groupBy { (tupleType) ->
         val app = applications.keys.find { tupleType.startsWith(it) && "-" in tupleType.substring(it.length) }
@@ -74,7 +82,9 @@ private fun getExecutionLevels(workloads: Collection<Workload>): Map<String, Lis
         tuples
             .groupBy { it.key.split("-").last() }
             .entries.map { (tupleType, executionLevels) ->
-                tupleType to executionLevels.flatMap { it.value }
+                tupleType to executionLevels.flatMap { measurements ->
+                    measurements.value.map { listOf(it.first, it.second) }
+                }
             }
     }.toMap()
 }

@@ -213,7 +213,7 @@ public class ClusteredMicroservicePlacementLogic implements MicroservicePlacemen
         Map<PlacementRequest, Integer> deviceToPlace = new HashMap<>();
         //initiate with the  parent of the client device for this
         for (PlacementRequest placementRequest : placementRequests) {
-            deviceToPlace.put(placementRequest, getDevice(placementRequest.getGatewayDeviceId()).getParentId());
+            deviceToPlace.put(placementRequest, placementRequest.getGatewayDeviceId());
 
             // already placed modules
             mappedMicroservices.put(placementRequest.getPlacementRequestId(), new HashMap<>(placementRequest.getPlacedMicroservices()));
@@ -228,7 +228,6 @@ public class ClusteredMicroservicePlacementLogic implements MicroservicePlacemen
                     if (getModule(microservice, app).getMips() + getCurrentCpuLoad().get(deviceId) <= resourceAvailability.get(deviceId).get(ControllerComponent.CPU)) {
                         Logger.debug("ModulePlacementEdgeward", "Placement of operator " + microservice + " on device " + device.getName() + " successful.");
                         getCurrentCpuLoad().put(deviceId, getModule(microservice, app).getMips() + getCurrentCpuLoad().get(deviceId));
-                        System.out.println("Placement of operator " + microservice + " on device " + device.getName() + " successful.");
 
                         moduleToApp.put(microservice, app.getAppId());
 

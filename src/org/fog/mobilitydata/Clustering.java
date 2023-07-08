@@ -4,6 +4,7 @@ import org.cloudbus.cloudsim.core.CloudSim;
 import org.fog.entities.FogDevice;
 import org.fog.placement.LocationHandler;
 import org.fog.utils.Config;
+import org.fog.utils.Logger;
 import org.json.simple.JSONObject;
 
 import java.util.ArrayList;
@@ -82,7 +83,7 @@ public class Clustering {
             ((FogDevice) CloudSim.getEntity(fogId)).setClusterMembersToLatencyMap(latencyMapL2);
 
         }
-        System.out.println("The Fog Device: " + locatorTemp.instanceToDataId.get(fogId) + " with id: " + fogId + " and parent id: " + parentId +
+        Logger.debug("CLUSTERING", "The Fog Device: " + locatorTemp.instanceToDataId.get(fogId) + " with id: " + fogId + " and parent id: " + parentId +
                 " has these cluster members: " + ((FogDevice) CloudSim.getEntity(fogId)).getClusterMembers());
         return;
     }

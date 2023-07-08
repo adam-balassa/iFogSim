@@ -1,5 +1,6 @@
 package org.fog.entities;
 
+import fi.aalto.cs.extensions.BandwidthMonitor;
 import fi.aalto.cs.extensions.ExecutionLevelMonitor;
 import org.apache.commons.math3.util.Pair;
 import org.cloudbus.cloudsim.*;
@@ -311,7 +312,7 @@ public class FogDevice extends PowerDatacenter {
         // TODO Auto-generated method stub
         JSONObject object = (JSONObject) ev.getData();
         AppModule appModule = (AppModule) object.get("module");
-        System.out.println(getName() + " is sending " + appModule.getName());
+        Logger.debug("SEND MODULE", getName() + " is sending " + appModule.getName());
         NetworkUsageMonitor.sendingModule((double) object.get("delay"), appModule.getSize());
         MigrationDelayMonitor.setMigrationDelay((double) object.get("delay"));
 
@@ -326,7 +327,7 @@ public class FogDevice extends PowerDatacenter {
         JSONObject object = (JSONObject) ev.getData();
         AppModule appModule = (AppModule) object.get("module");
         Application app = (Application) object.get("application");
-        System.out.println(getName() + " is receiving " + appModule.getName());
+        Logger.debug("SEND RECEIVE", getName() + " is receiving " + appModule.getName());
         NetworkUsageMonitor.sendingModule((double) object.get("delay"), appModule.getSize());
         MigrationDelayMonitor.setMigrationDelay((double) object.get("delay"));
 
@@ -878,6 +879,7 @@ public class FogDevice extends PowerDatacenter {
         send(getId(), networkDelay, FogEvents.UPDATE_NORTH_TUPLE_QUEUE);
         send(parentId, networkDelay + getUplinkLatency(), FogEvents.TUPLE_ARRIVAL, tuple);
         NetworkUsageMonitor.sendingTuple(getUplinkLatency(), tuple.getCloudletFileSize());
+        BandwidthMonitor.INSTANCE.send(tuple, this, true, networkDelay);
     }
 
     protected void sendUp(Tuple tuple) {
@@ -886,6 +888,7 @@ public class FogDevice extends PowerDatacenter {
                 sendUpFreeLink(tuple);
             } else {
                 northTupleQueue.add(tuple);
+                BandwidthMonitor.INSTANCE.startWait(tuple, this, true);
             }
         }
     }
@@ -909,6 +912,7 @@ public class FogDevice extends PowerDatacenter {
         send(getId(), networkDelay, FogEvents.UPDATE_SOUTH_TUPLE_QUEUE);
         send(childId, networkDelay + latency, FogEvents.TUPLE_ARRIVAL, tuple);
         NetworkUsageMonitor.sendingTuple(latency, tuple.getCloudletFileSize());
+        BandwidthMonitor.INSTANCE.send(tuple, this, false, networkDelay);
     }
 
     protected void sendDown(Tuple tuple, int childId) {
@@ -917,6 +921,7 @@ public class FogDevice extends PowerDatacenter {
                 sendDownFreeLink(tuple, childId);
             } else {
                 southTupleQueue.add(new Pair<Tuple, Integer>(tuple, childId));
+                BandwidthMonitor.INSTANCE.startWait(tuple, this, false);
             }
         }
     }

@@ -4,11 +4,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import fi.aalto.cs.extensions.Monitor;
 import org.apache.commons.math3.util.Pair;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.fog.entities.Tuple;
 
-public class TimeKeeper {
+public class TimeKeeper implements Monitor {
 
 	private static TimeKeeper instance;
 	
@@ -189,6 +190,10 @@ public class TimeKeeper {
 //			}
 //		}
 	}
-	
-	
+
+
+	@Override
+	public void clear() {
+		TimeKeeper.instance = new TimeKeeper();
+	}
 }

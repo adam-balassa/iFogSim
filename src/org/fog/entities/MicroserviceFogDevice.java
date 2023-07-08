@@ -445,14 +445,14 @@ public class MicroserviceFogDevice extends FogDevice {
                 module.updateVmProcessing(CloudSim.clock(), getVmAllocationPolicy().getHost(module).getVmScheduler()
                         .getAllocatedMipsForVm(module));
 
-                System.out.println("Module " + module.getName() + "created on " + getName() + " under Launch module");
+                Logger.debug("MODULE ARRIVE", "Module " + module.getName() + "created on " + getName() + " under Launch module");
                 Logger.debug("Module deploy success", "Module " + module.getName() + " placement on " + getName() + " successful. vm id : " + module.getId());
             } else {
                 Logger.error("Module deploy error", "Module " + module.getName() + " placement on " + getName() + " failed");
-                System.out.println("Module " + module.getName() + " placement on " + getName() + " failed");
+                Logger.debug("MODULE ARRIVE", "Module " + module.getName() + " placement on " + getName() + " failed");
             }
         } else {
-            System.out.println("Module " + module.getName() + " already deplyed on" + getName());
+            Logger.debug("MODULE ARRIVE", "Module " + module.getName() + " already deplyed on" + getName());
         }
     }
 
@@ -461,7 +461,7 @@ public class MicroserviceFogDevice extends FogDevice {
         JSONObject object = (JSONObject) ev.getData();
         AppModule appModule = (AppModule) object.get("module");
         Application app = (Application) object.get("application");
-        System.out.println(CloudSim.clock() + getName() + " is receiving " + appModule.getName());
+        Logger.debug("MODULE RECEIVE", CloudSim.clock() + getName() + " is receiving " + appModule.getName());
 
         sendNow(getId(), FogEvents.APP_SUBMIT, app);
         sendNow(getId(), FogEvents.LAUNCH_MODULE, appModule);
@@ -477,7 +477,7 @@ public class MicroserviceFogDevice extends FogDevice {
     protected void moduleSend(SimEvent ev) {
         JSONObject object = (JSONObject) ev.getData();
         AppModule appModule = (AppModule) object.get("module");
-        System.out.println(getName() + " is sending " + appModule.getName());
+        Logger.debug("SEND MODULE", getName() + " is sending " + appModule.getName());
         NetworkUsageMonitor.sendingModule((double) object.get("delay"), appModule.getSize());
         MigrationDelayMonitor.setMigrationDelay((double) object.get("delay"));
 

@@ -1,6 +1,8 @@
 package org.fog.utils;
 
-public class MigrationDelayMonitor {
+import fi.aalto.cs.extensions.Monitor;
+
+public class MigrationDelayMonitor implements Monitor {
 	
 	private static double migrationDelay = 0.0;
 	
@@ -10,5 +12,10 @@ public class MigrationDelayMonitor {
 
 	public static void setMigrationDelay(double migrationDelayReceived) {
 		migrationDelay += migrationDelayReceived;
+	}
+
+	@Override
+	public void clear() {
+		migrationDelay = 0.0;
 	}
 }

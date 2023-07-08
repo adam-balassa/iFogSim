@@ -1,6 +1,8 @@
 package org.fog.utils;
 
-public class NetworkUsageMonitor {
+import fi.aalto.cs.extensions.Monitor;
+
+public class NetworkUsageMonitor implements Monitor {
 
 	private static double networkUsage = 0.0;
 	
@@ -14,5 +16,10 @@ public class NetworkUsageMonitor {
 	
 	public static double getNetworkUsage(){
 		return networkUsage;
+	}
+
+	@Override
+	public void clear() {
+		networkUsage = 0.0;
 	}
 }

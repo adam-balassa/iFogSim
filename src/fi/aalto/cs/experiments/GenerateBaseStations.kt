@@ -24,12 +24,17 @@ import org.fog.utils.distribution.DeterministicDistribution
 fun main() {
     // enableDebugLogging()
     enableReporting()
-    repeat(6) {
-        GenerateBaseStations("RWA | assisted BS placement", true).run()
-    }
-    repeat(6) {
-        GenerateBaseStations("RWA | random BS placement", false).run()
-    }
+    GenerateBaseStations("RWA | assisted BS placement", true).run()
+//    repeat(6) {
+//        GenerateBaseStations("RWA | assisted BS placement", true).run()
+//        clearMonitors()
+//        sleep(1000)
+//    }
+//    repeat(6) {
+//        GenerateBaseStations("RWA | random BS placement", false).run()
+//        clearMonitors()
+//        sleep(1000)
+//    }
 }
 
 class GenerateBaseStations(
@@ -105,7 +110,7 @@ class GenerateBaseStations(
             addAppModule(
                 RoadWeatherClassification,
                 ram = 1024,
-                mips = 150.0,
+                mips = 500.0,
                 storage = 200,
                 selectivityMapping = mapOf(
                     forwarding(NIRCameraImage to RoadWeatherConditions),
@@ -236,6 +241,7 @@ class GenerateBaseStations(
             level = FogDeviceLevel.Cloud,
             mips = 50_000,
             ram = 40_000,
+            downlinkBandwidth = 40_000,
             uplinkBandwidth = 100,
             costRatePerMips = 0.001,
             busyPower = 16 * 103.0,

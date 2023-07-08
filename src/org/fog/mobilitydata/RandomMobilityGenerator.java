@@ -1,5 +1,6 @@
 package org.fog.mobilitydata;
 
+import org.fog.utils.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -79,11 +80,11 @@ public class RandomMobilityGenerator {
         File tmpDir = new File(fileName);
         boolean exists = tmpDir.exists();
         if (!exists || renewDataset) {
-            System.out.println("Dataset: " + fileName + " is being created");
+            Logger.debug("DATA GENERATION", "Dataset: " + fileName + " is being created");
             MobilityPositionInitiator(mobilityModel, 100, user_index);
             writeMobilityDataset(fileName);
         } else {
-            System.out.println("The dataset: " + fileName + " exists already.");
+            Logger.debug("DATA GENERATION", "The dataset: " + fileName + " exists already.");
             // DO NOTHING
         }
 
@@ -131,7 +132,7 @@ public class RandomMobilityGenerator {
             this.mobilitySpecJSON.add(obj);
             while (index < numberOfPositions) {
                 if (this.directionFlag == false || mobilityModel == References.random_walk_mobility_model) {
-                    this.angle = getRandomNumberInRange(0, 259); // Random direction.
+                    this.angle = getRandomNumberInRange(0, 359); // Random direction.
                     this.directionFlag = true;
                 }
                 double mobilitySpeed = (double) (getRandomNumberInRange((int) References.MinMobilitySpeed * 100,
@@ -185,6 +186,8 @@ public class RandomMobilityGenerator {
 
                 index++;
             }
+            References.lat_reference = positionX;
+            References.long_reference = positionY;
         }
 
 

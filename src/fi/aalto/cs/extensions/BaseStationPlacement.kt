@@ -16,7 +16,7 @@ data class Area(val top: Double, val right: Double, val bottom: Double, val left
 
     val width get() = right - left
     val height get() = bottom - top
-    val center get() = Location((top + bottom) / 2, (left + right) / 2, 0)
+    val center get() = Location((top + bottom) / 2, (left + right) / 2, -1)
 
     fun cells(n: Int, m: Int): List<Area> {
         val cellWidth = width / m
@@ -33,7 +33,7 @@ data class Area(val top: Double, val right: Double, val bottom: Double, val left
         }
     }
 
-    fun randomPoint() = Location(top + nextDouble() * height, left + nextDouble() * width, 0)
+    fun randomPoint() = Location(top + nextDouble() * height, left + nextDouble() * width, -1)
 
     fun contains(location: Location) = location.latitude in top..bottom && location.longitude in left..right
 }
