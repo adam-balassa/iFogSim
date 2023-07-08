@@ -55,7 +55,13 @@ export function aggregateExperiment(experiments: ExperimentDetails[]): Aggregate
           acc[tupleType] = [...(acc[tupleType] ?? []), ...levels]
         })
         return acc
-      }, {} as { [tupleType: string]: (string | [string, number])[] })
+      }, {} as { [tupleType: string]: (string | [string, number])[] }),
+    waitingTuples: {
+      byTupleType: aggregateConfig(experiments.map(e => e.results.waitingTuples?.byTupleType ?? {})),
+      byDeviceId: aggregateConfig(experiments.map(e => e.results.waitingTuples?.byDeviceId ?? {})),
+      byLevel: aggregateConfig(experiments.map(e => e.results.waitingTuples?.byLevel ?? {})),
+      byDirection: aggregateConfig(experiments.map(e => e.results.waitingTuples?.byDirection ?? {})),
+    }
   }
   return {
     type: 'aggregate',
@@ -66,11 +72,12 @@ export function aggregateExperiment(experiments: ExperimentDetails[]): Aggregate
   }
 }
 
+
 function aggregateConfigs<T extends Config>(configs: T[][]): T[] {
   return zipSafe(...configs).map(aggregateConfig) as T[]
 }
 
-function aggregateConfig(configs: Config[]): Config {
+function aggregateConfig<T extends Config>(configs: Config[]): T {
   const aggregatedEntries = _(configs)
     .flatMap(c => Object.entries(c))
     .groupBy(([key]) => key)
@@ -79,7 +86,7 @@ function aggregateConfig(configs: Config[]): Config {
     .entries()
     .value()
 
-  return Object.fromEntries(aggregatedEntries)
+  return Object.fromEntries(aggregatedEntries) as T
 }
 
 function aggregateConfigValue<T extends Config[keyof Config]>(value: T[]): T {

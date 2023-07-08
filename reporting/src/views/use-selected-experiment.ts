@@ -1,10 +1,10 @@
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import { AggregateExperimentDetails, ExperimentDetails } from "@/types/types";
 import useFetchExperimentDetails from "./use-fetch-experiment-details";
 import { aggregateExperiment } from "@/views/aggregate-experiment";
 import { debounce } from "lodash";
 
-const experimentDetails = new Map<string, ExperimentDetails>()
+const experimentDetails = new Map<string, Promise<ExperimentDetails>>()
 const selectedExperiment = ref<ExperimentDetails | AggregateExperimentDetails | null>(null)
 
 export function experimentId(experiment: {app: string, experiment: string} | undefined) {
@@ -24,10 +24,9 @@ export default function useSelectedExperiment() {
     if (experiment) {
       return experiment
     } else {
-      return await fetch(id.app, id.experiment).then(result => {
-        experimentDetails.set(experimentId(id), result)
-        return result
-      })
+      const fetchExperiment = fetch(id.app, id.experiment)
+      experimentDetails.set(experimentId(id), fetchExperiment)
+      return fetchExperiment
     }
   }
 

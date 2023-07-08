@@ -19,6 +19,13 @@
       :app-loop-latencies="experiments.results.appLoopLatencies"
       :experiments="experiments.experiment.split(',')"
       class="pt-3"/>
+
+    <WaitingTimeCharts
+      v-if="experiments.results.waitingTuples"
+      :waiting-tuples="experiments.results.waitingTuples"
+      :devices="experiments.setup.network"
+      :levels="experiments.setup.fogDevices"
+    />
   </div>
 </template>
 
@@ -33,6 +40,7 @@ import AppLoopLatenciesChart from "@/views/experiment-details-panel/aggregate-re
 import TemporalExecutionLevelsChart
   from "@/views/experiment-details-panel/experiment-results/temporal-execution-levels-chart.vue";
 import { areSimpleExecutionLevels, areTemporalExecutionLevels } from "@/utils/helpers";
+import WaitingTimeCharts from "@/views/experiment-details-panel/experiment-results/waiting-time-charts.vue";
 
 defineProps<{
   experiments: AggregateExperimentDetails

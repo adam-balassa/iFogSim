@@ -47,6 +47,12 @@ export interface ExperimentResults {
   }[];
   executionLevels?: {
     [tupleType: string]: string[] | [string, number][]
+  };
+  waitingTuples?: {
+    byTupleType: { [tupleType: string]: number },
+    byDeviceId: { [deviceId: string]: number },
+    byLevel: { [level: string]: number },
+    byDirection: { [direction: string]: number },
   }
 }
 
@@ -65,6 +71,12 @@ export interface AggregateExperimentResults {
   }[];
   executionLevels?: {
     [tupleType: string]: (string | [string, number])[]
+  };
+  waitingTuples?: {
+    byTupleType: { [tupleType: string]: number },
+    byDeviceId: { [deviceId: string]: number },
+    byLevel: { [level: string]: number },
+    byDirection: { [direction: string]: number },
   }
 }
 

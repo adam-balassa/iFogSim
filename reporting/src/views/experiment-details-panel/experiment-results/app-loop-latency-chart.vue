@@ -15,7 +15,10 @@
       :max-fraction-digits="3"
       @update:model-value="p => qosLatency = nextLatency(p)"/>
   </Panel>
-  <Chart class="w-full" type="scatter" :data="datasets" :options="{interaction: { mode: 'x' }}"/>
+  <Chart class="w-full" type="scatter" :data="datasets" :options="{ interaction: {
+    mode: 'x',
+    intersect: false
+  }}"/>
 </template>
 
 <script setup lang="ts">
@@ -48,7 +51,8 @@ const datasets = computed<ChartData<'scatter'>>(() => ({
       label: dataset.title,
       showLine: true,
       data: cdf,
-      tension: .1
+      tension: .1,
+      pointRadius: 0
     }
   })
 }))

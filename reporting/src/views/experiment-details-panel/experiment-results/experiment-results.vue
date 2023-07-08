@@ -16,6 +16,12 @@
     />
     <AppLoopLatenciesTable :app-loop-latencies="results.appLoopLatencies" class="pt-3"/>
     <AppLoopLatenciesChart :app-loop-latencies="results.appLoopLatencies" class="pt-3"/>
+    <WaitingTimeCharts
+      v-if="results.waitingTuples"
+      :waiting-tuples="results.waitingTuples"
+      :devices="setup.network"
+      :levels="setup.fogDevices"
+    />
     <PowerConsumptionChart :power-consumptions="results.fogDeviceEnergyConsumptions" class="pt-3"/>
   </div>
 </template>
@@ -32,6 +38,7 @@ import AppLoopLatenciesChart from "./app-loop-latencies-chart.vue";
 import { areSimpleExecutionLevels, areTemporalExecutionLevels } from "@/utils/helpers";
 import TemporalExecutionLevelsChart
   from "@/views/experiment-details-panel/experiment-results/temporal-execution-levels-chart.vue";
+import WaitingTimeCharts from "@/views/experiment-details-panel/experiment-results/waiting-time-charts.vue";
 
 defineProps<{
   results: ExperimentDetails['results'];
