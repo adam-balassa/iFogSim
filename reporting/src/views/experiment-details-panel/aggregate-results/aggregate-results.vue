@@ -1,7 +1,10 @@
 <template>
   <div>
     <ResultsSummaryTable :results="experiments.results" class="pt-3"/>
-    <TupleExecutionTable :tuple-executions="experiments.results.tupleExecutionLatencies" class="pt-3"/>
+    <TupleExecutionTimesTables
+      :tuple-executions="experiments.results.tupleExecutionLatencies"
+      :executed-tuples="experiments.results.executedTuples"
+    />
     <ExecutionLevelsChart
       v-if="experiments.results.executionLevels && areSimpleExecutionLevels(experiments.results.executionLevels)"
       :execution-levels="experiments.results.executionLevels"
@@ -41,6 +44,8 @@ import TemporalExecutionLevelsChart
   from "@/views/experiment-details-panel/experiment-results/temporal-execution-levels-chart.vue";
 import { areSimpleExecutionLevels, areTemporalExecutionLevels } from "@/utils/helpers";
 import WaitingTimeCharts from "@/views/experiment-details-panel/experiment-results/waiting-time-charts.vue";
+import TupleExecutionTimesTables
+  from "./tuple-execution-times-tables.vue";
 
 defineProps<{
   experiments: AggregateExperimentDetails

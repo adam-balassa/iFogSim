@@ -5,6 +5,7 @@ import fi.aalto.cs.utils.MicroservicePlacementStrategy.ClusteredPlacement
 import org.cloudbus.cloudsim.Pe
 import org.cloudbus.cloudsim.power.PowerHost
 import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple
+import org.cloudbus.cloudsim.sdn.example.policies.VmSchedulerTimeSharedEnergy
 import org.cloudbus.cloudsim.sdn.overbooking.BwProvisionerOverbooking
 import org.cloudbus.cloudsim.sdn.overbooking.PeProvisionerOverbooking
 import org.fog.application.AppEdge
@@ -17,7 +18,6 @@ import org.fog.mobilitydata.Location
 import org.fog.mobilitydata.References.NOT_SET
 import org.fog.placement.*
 import org.fog.policy.AppModuleAllocationPolicy
-import org.fog.scheduler.StreamOperatorScheduler
 import org.fog.scheduler.TupleScheduler
 import org.fog.utils.FogLinearPowerModel
 import org.fog.utils.FogUtils.generateEntityId
@@ -37,10 +37,10 @@ fun <T> Simulation<T>.addApplication(
 /**
  * Add an app module to the application
  * @param module Name of the `AppModule`
- * @param mips CPU resource consumption in Million instructions per second
+ * @param mips CPU resource consumption in million instructions per second
  * @param ram Memory consumption in MB
  * @param storage Storage consumption in MB
- * @param bandwidth Bandwidth capacity to allocate in Mbps
+ * @param bandwidth Bandwidth capacity to allocate in bit/sec (bps)
  * @param selectivityMapping Forwarding probabilistic model from input tuples to output tuples
  */
 fun Workload.addAppModule(
@@ -78,7 +78,7 @@ fun Workload.addAppModule(
  * @param direction Up/Down/Actuator: which port should a FogDevice use to forward the tuple
  * @param cpuLength CPU power needed to process the tuple in Million instructions
  * @param cpuLengthGenerator Indicates that the tuple's CPU-length should be a stochastic value determined by the generator
- * @param dataSize The size of the tuple in MB
+ * @param dataSize The size of the tuple in bytes
  * @param dataSizeGenerator Indicates that the tuple's data size should be a stochastic value determined by the generator
  * @param appEdgeType Indicates whether the edge is between modules or sensors or actuators
  */
@@ -122,10 +122,10 @@ fun Workload.addAppEdge(
  * @param parentId The parent fog device in the network topology tree
  * @param level Indicates the level of the fog device in the network topology tree
  * @param storage Storage capacity of the device in MB
- * @param bandwidth Simulated bandwidth of the device in Mbps
- * @param uplinkBandwidth Bandwidth of the up-link port of the device in Mbps - only used for tuple-forwarding latency calculation
- * @param downlinkBandwidth Bandwidth of the down-link port of the device in Mbps - only used for tuple-forwarding latency calculation
- * @param clusterLinkBandwidth Bandwidth between cluster nodes in Mbps - only used for tuple-forwarding latency calculation
+ * @param bandwidth Simulated bandwidth of the device in bit/sec (bps)
+ * @param uplinkBandwidth Bandwidth of the up-link port of the device in bit/sec (bps) - only used for tuple-forwarding latency calculation
+ * @param downlinkBandwidth Bandwidth of the down-link port of the device in bit/sec (bps) - only used for tuple-forwarding latency calculation
+ * @param clusterLinkBandwidth Bandwidth between cluster nodes in bit/sec (bps) - only used for tuple-forwarding latency calculation
  * @param uplinkLatency Latency of the up-link connection in milliseconds
  * @param schedulingInterval How often should the VM scheduling logic run in the host (ms)
  * @param busyPower Power consumption when the device is performing computation in MJ/s
@@ -138,7 +138,8 @@ fun Workload.addAppEdge(
  */
 fun <T> Simulation<T>.addFogDevice(
     type: FogDeviceType,
-    mips: Long,
+    mips: Long = 3600,
+    cpus: List<Long>? = null,
     ram: Int,
     parentId: Int? = null,
     level: FogDeviceLevel = FogDeviceLevel.Proxy,
@@ -160,14 +161,15 @@ fun <T> Simulation<T>.addFogDevice(
     microservicesFogDeviceType: MicroservicesFogDeviceType? = null,
     broadcastResults: Boolean = false
 ): FogDevice {
-    val processingElements = listOf(Pe(0, PeProvisionerOverbooking(mips.toDouble())))
+    val processingElements = cpus?.mapIndexed { i, cpuMips -> Pe(i, PeProvisionerOverbooking(cpuMips.toDouble())) }
+        ?: listOf(Pe(0, PeProvisionerOverbooking(mips.toDouble())))
     val host = PowerHost(
         generateEntityId(),
         RamProvisionerSimple(ram),
         BwProvisionerOverbooking(bandwidth),
         storage,
         processingElements,
-        StreamOperatorScheduler(processingElements),
+        VmSchedulerTimeSharedEnergy(processingElements),
         FogLinearPowerModel(busyPower, idlePower),
     )
     val characteristics = FogDeviceCharacteristics(

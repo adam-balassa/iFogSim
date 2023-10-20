@@ -61,7 +61,20 @@ export function aggregateExperiment(experiments: ExperimentDetails[]): Aggregate
       byDeviceId: aggregateConfig(experiments.map(e => e.results.waitingTuples?.byDeviceId ?? {})),
       byLevel: aggregateConfig(experiments.map(e => e.results.waitingTuples?.byLevel ?? {})),
       byDirection: aggregateConfig(experiments.map(e => e.results.waitingTuples?.byDirection ?? {})),
-    }
+    },
+    executedTuples: _(experiments.map(e => Object.entries(e.results.executedTuples ?? {})))
+      .reduce((acc, next) => {
+        next.forEach(([tupleType, executionTimes]) => {
+          const tupleExecutionsForType = acc[tupleType] ?? {}
+          Object.entries(executionTimes).forEach(([level, time]) => {
+            const executionTimesOnLevel = tupleExecutionsForType[level] ?? []
+            tupleExecutionsForType[level] = [...executionTimesOnLevel, time]
+          })
+          acc[tupleType] = tupleExecutionsForType
+        })
+        return acc
+      }, {} as { [tupleType: string]: { [level: string]: number[] } })
+
   }
   return {
     type: 'aggregate',

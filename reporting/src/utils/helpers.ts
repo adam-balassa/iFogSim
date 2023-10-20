@@ -25,12 +25,12 @@ export function transposeConfigs<T extends Config>(configs: T[], columnName?: ke
 
 type TemporalExecutionLevels = { [tupleType: string]: [string, number][] }
 export function areTemporalExecutionLevels(executionLevels: AggregateExperimentResults['executionLevels']): executionLevels is TemporalExecutionLevels {
-  if (executionLevels == null) return false
+  if (executionLevels == null || !Object.values(executionLevels)[0]) return false
   return Object.values(executionLevels)[0].every(measurement => Array.isArray(measurement))
 }
 
 type ExecutionLevels = { [tupleType: string]: string[] }
 export function areSimpleExecutionLevels(executionLevels: AggregateExperimentResults['executionLevels']): executionLevels is ExecutionLevels {
-  if (executionLevels == null) return false
+  if (executionLevels == null || !Object.values(executionLevels)[0]) return false
   return Object.values(executionLevels)[0].every(measurement => !Array.isArray(measurement))
 }

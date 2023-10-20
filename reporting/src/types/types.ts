@@ -53,6 +53,11 @@ export interface ExperimentResults {
     byDeviceId: { [deviceId: string]: number },
     byLevel: { [level: string]: number },
     byDirection: { [direction: string]: number },
+  };
+  executedTuples?: {
+    [tupleType: string]: {
+      [level: string]: number
+    }
   }
 }
 
@@ -77,6 +82,11 @@ export interface AggregateExperimentResults {
     byDeviceId: { [deviceId: string]: number },
     byLevel: { [level: string]: number },
     byDirection: { [direction: string]: number },
+  }
+  executedTuples?: {
+    [tupleType: string]: {
+      [level: string]: number[]
+    }
   }
 }
 

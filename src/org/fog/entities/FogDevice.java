@@ -2,6 +2,7 @@ package org.fog.entities;
 
 import fi.aalto.cs.extensions.BandwidthMonitor;
 import fi.aalto.cs.extensions.ExecutionLevelMonitor;
+import fi.aalto.cs.extensions.TupleExecutionTimeMonitor;
 import org.apache.commons.math3.util.Pair;
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
@@ -515,6 +516,7 @@ public class FogDevice extends PowerDatacenter {
                         cloudletCompleted = true;
                         Tuple tuple = (Tuple) cl;
                         TimeKeeper.getInstance().tupleEndedExecution(tuple);
+                        TupleExecutionTimeMonitor.INSTANCE.executionEnd(tuple);
                         Application application = getApplicationMap().get(tuple.getAppId());
                         Logger.debug(getName(), "Completed execution of tuple " + tuple.getCloudletId() + "on " + tuple.getDestModuleName());
                         List<Tuple> resultantTuples = application.getResultantTuples(tuple.getDestModuleName(), tuple, getId(), vm.getId());
@@ -819,6 +821,7 @@ public class FogDevice extends PowerDatacenter {
         }
 
         TimeKeeper.getInstance().tupleStartedExecution(tuple);
+        TupleExecutionTimeMonitor.INSTANCE.executionStart(tuple, this);
         updateAllocatedMips(moduleName);
         processCloudletSubmit(ev, false);
         updateAllocatedMips(moduleName);

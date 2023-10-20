@@ -1,7 +1,12 @@
 <template>
   <div>
     <ResultsSummaryTable :results="results" class="pt-3"/>
-    <TupleExecutionTable :tuple-executions="results.tupleExecutionLatencies" class="pt-3"/>
+    <TupleExecutionTimesTables
+      v-if="results.executedTuples"
+      :executed-tuples="results.executedTuples"
+      :tuple-executions="results.tupleExecutionLatencies"
+      class="pt-3"
+    />
     <ExecutionLevelsChart
       v-if="results.executionLevels && areSimpleExecutionLevels(results.executionLevels)"
       :execution-levels="results.executionLevels"
@@ -30,7 +35,6 @@
 
 import ResultsSummaryTable from "./results-summary-table.vue";
 import { ExperimentDetails } from "@/types/types";
-import TupleExecutionTable from "./tuple-execution-table.vue";
 import AppLoopLatenciesTable from "./app-loop-latencies-table.vue";
 import PowerConsumptionChart from "./power-consumption-chart.vue";
 import ExecutionLevelsChart from "./execution-levels-chart.vue";
@@ -39,6 +43,8 @@ import { areSimpleExecutionLevels, areTemporalExecutionLevels } from "@/utils/he
 import TemporalExecutionLevelsChart
   from "@/views/experiment-details-panel/experiment-results/temporal-execution-levels-chart.vue";
 import WaitingTimeCharts from "@/views/experiment-details-panel/experiment-results/waiting-time-charts.vue";
+import TupleExecutionTimesTables
+  from "@/views/experiment-details-panel/experiment-results/tuple-execution-times-tables.vue";
 
 defineProps<{
   results: ExperimentDetails['results'];

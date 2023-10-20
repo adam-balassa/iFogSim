@@ -50,8 +50,9 @@ fun <T> reportSimulationResults(simulation: Simulation<T>): Map<String, Any> {
     val fogDeviceEnergyConsumptions = getFogDeviceEnergyConsumptions(simulation.network.fogDevices)
     val networkUsage = NetworkUsageMonitor.getNetworkUsage() / Config.MAX_SIMULATION_TIME
     val migrationDelay = MigrationDelayMonitor.getMigrationDelay()
-    val executionLevels = getExecutionLevels(simulation.workload.values)
+//    val executionLevels = getExecutionLevels(simulation.workload.values)
     val waitingTuples = getWaitingTuples(BandwidthMonitor.waitingTuples)
+    val executedTuples = getExecutedTuples(TupleExecutionTimeMonitor.executedTuples)
 
     return mapOf(
         "executionTime" to executionTime,
@@ -60,8 +61,9 @@ fun <T> reportSimulationResults(simulation: Simulation<T>): Map<String, Any> {
         "appLoopLatencies" to appLoopLatencies,
         "tupleExecutionLatencies" to tupleExecutionLatencies,
         "fogDeviceEnergyConsumptions" to fogDeviceEnergyConsumptions,
-        "executionLevels" to executionLevels,
+//        "executionLevels" to executionLevels,
         "waitingTuples" to waitingTuples,
+        "executedTuples" to executedTuples,
     )
 }
 
@@ -72,6 +74,15 @@ private fun getWaitingTuples(waitingTuples: List<WaitingTuple>): Map<String, Map
         "byLevel" to waitingTuples.groupBy { it.level }.mapValues { (_, values) -> values.sumOf { it.waitTime } / values.size }.toMap(),
         "byDirection" to waitingTuples.groupBy { it.uplink }.mapValues { (_, values) -> values.sumOf { it.waitTime } / values.size }.toMap()
     )
+
+private fun getExecutedTuples(executedTuples: List<ExecutingTuple>): Map<String, Map<String, Double>> =
+    executedTuples
+        .groupBy { it.tupleType }
+        .mapValues { (_, tuples) -> tuples
+            .groupBy { it.level }
+            .mapValues { (_, tuples) -> tuples.sumOf { it.executionTime } / tuples.size }
+        }
+        .toMap()
 
 private fun getExecutionLevels(workloads: Collection<Workload>): Map<String, List<List<Any>>> {
     val applications = workloads.groupBy { it.name }
@@ -146,11 +157,11 @@ inline fun <reified Config> reportSimulationSetup(simulation: Simulation<Config>
         "sensors" to sensorConfigs,
         "actuators" to actuatorConfigs,
         "application" to applicationConfig,
-        if (StochasticAppEdge.tupleTypeToCpuLength.isNotEmpty()) {
-            "tupleTypeToCpuLength" to StochasticAppEdge.tupleTypeToCpuLength
-        } else {
-            null
-        }
+//        if (StochasticAppEdge.tupleTypeToCpuLength.isNotEmpty()) {
+//            "tupleTypeToCpuLength" to StochasticAppEdge.tupleTypeToCpuLength
+//        } else {
+//            null
+//        }
     ).toMap()
 }
 
@@ -177,7 +188,8 @@ fun getSensorConfigs(sensors: List<Sensor>) =
             "distributionType" to sensor.transmitDistribution::class.simpleName,
             (sensor.transmitDistribution as? DeterministicDistribution)?.let {
                 "deterministicDistributionFactor" to it.value
-            }
+            },
+            "FPS" to 1000 / sensor.transmitDistribution.meanInterTransmitTime
         ).toMap()
     }
 

@@ -213,7 +213,7 @@ public class ClusteredMicroservicePlacementLogic implements MicroservicePlacemen
         Map<PlacementRequest, Integer> deviceToPlace = new HashMap<>();
         //initiate with the  parent of the client device for this
         for (PlacementRequest placementRequest : placementRequests) {
-            deviceToPlace.put(placementRequest, placementRequest.getGatewayDeviceId());
+            deviceToPlace.put(placementRequest, getDevice(placementRequest.getGatewayDeviceId()).getParentId());
 
             // already placed modules
             mappedMicroservices.put(placementRequest.getPlacementRequestId(), new HashMap<>(placementRequest.getPlacedMicroservices()));

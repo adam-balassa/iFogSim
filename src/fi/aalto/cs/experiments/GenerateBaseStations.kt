@@ -5,41 +5,56 @@ package fi.aalto.cs.experiments
 import fi.aalto.cs.experiments.GenerateBaseStations.FogDevices.*
 import fi.aalto.cs.experiments.GenerateBaseStations.Modules.*
 import fi.aalto.cs.experiments.GenerateBaseStations.Tuples.*
+import fi.aalto.cs.extensions.PoissonFPS
 import fi.aalto.cs.extensions.generateAssistedLocations
 import fi.aalto.cs.extensions.generateUniformLocations
 import fi.aalto.cs.utils.*
 import fi.aalto.cs.utils.AppEdgeType.FromSensor
 import fi.aalto.cs.utils.AppEdgeType.ToActuator
-import fi.aalto.cs.utils.FogDeviceLevel.Gateway
-import fi.aalto.cs.utils.FogDeviceLevel.Proxy
+import fi.aalto.cs.utils.FogDeviceLevel.*
 import fi.aalto.cs.utils.MicroservicePlacementStrategy.ClusteredPlacement
 import fi.aalto.cs.utils.MicroservicePlacementStrategy.RandomPlacement
 import fi.aalto.cs.utils.MicroservicesFogDeviceType.*
+import fi.aalto.cs.utils.MicroservicesFogDeviceType.Cloud
 import fi.aalto.cs.utils.TupleDirection.*
 import org.fog.mobilitydata.Location
 import org.fog.mobilitydata.RandomMobilityGenerator
 import org.fog.mobilitydata.References.*
-import org.fog.utils.distribution.DeterministicDistribution
+import java.lang.Thread.sleep
 
 fun main() {
-    // enableDebugLogging()
     enableReporting()
-    GenerateBaseStations("RWA | assisted BS placement", true).run()
-//    repeat(6) {
-//        GenerateBaseStations("RWA | assisted BS placement", true).run()
+//    repeat(10) {
+//        GenerateBaseStations("Main experiment | small | assisted", true, 4).run()
 //        clearMonitors()
 //        sleep(1000)
 //    }
-//    repeat(6) {
-//        GenerateBaseStations("RWA | random BS placement", false).run()
+//    repeat(10) {
+//        GenerateBaseStations("Main experiment | small | random", false, 4).run()
 //        clearMonitors()
 //        sleep(1000)
 //    }
+//    repeat(3) {
+//        GenerateBaseStations("Main experiment | medium", true, 6).run()
+//        clearMonitors()
+//        sleep(1000)
+//    }
+    repeat(3) {
+        GenerateBaseStations("Main experiment | XL", true, 10).run()
+        clearMonitors()
+        sleep(1000)
+    }
+    repeat(3) {
+        GenerateBaseStations("Main experiment | XXL", true, 12).run()
+        clearMonitors()
+        sleep(1000)
+    }
 }
 
 class GenerateBaseStations(
     name: String,
     assistedBaseStationPlacement: Boolean,
+    numberOfProxyServers: Int,
 ) {
     private enum class Modules : ModuleType {
         DriverAssistanceSystem,
@@ -64,9 +79,9 @@ class GenerateBaseStations(
     private val simulation = Simulation(
         name,
         object {
-            val numberOfVehiclesPerRU = 6
-            val numberOfRadioUnitsPerParent = 8
-            val numberOfProxyServers = 2
+            val numberOfVehiclesPerRU = 10 // 20
+            val numberOfRadioUnitsPerParent = 8 // 10
+            val numberOfProxyServers = numberOfProxyServers // 4
             val assistedBaseStationPlacement = assistedBaseStationPlacement
             val centralisedPlacement = false
             val randomPlacement = false
@@ -102,6 +117,7 @@ class GenerateBaseStations(
                 ram = 128,
                 mips = 250.0,
                 storage = 100,
+                bandwidth = 52_428_800 / 10,
                 selectivityMapping = mapOf(
                     forwarding(NIRCamera to NIRCameraImage),
                     forwarding(RoadWeatherConditions to EstimatedBreakingDistance, 0.2)
@@ -112,9 +128,10 @@ class GenerateBaseStations(
                 ram = 1024,
                 mips = 500.0,
                 storage = 200,
+                bandwidth = 52_428_800 / 10,
                 selectivityMapping = mapOf(
                     forwarding(NIRCameraImage to RoadWeatherConditions),
-                )
+                ),
             )
 
             addAppEdge(
@@ -124,7 +141,8 @@ class GenerateBaseStations(
                 Up,
                 appEdgeType = FromSensor,
                 cpuLength = 300.0,
-                cpuLengthGenerator = { logNormal(300.0) }
+                cpuLengthGenerator = { logNormal(300.0) },
+                dataSize = 3_932_160.0,
             )
             addAppEdge(
                 DriverAssistanceSystem,
@@ -132,7 +150,8 @@ class GenerateBaseStations(
                 NIRCameraImage,
                 Up,
                 cpuLength = 5000.0,
-                cpuLengthGenerator = { logNormal(5000.0) }
+                cpuLengthGenerator = { logNormal(5000.0) },
+                dataSize = 3_932_160.0
             )
 
             addAppEdge(
@@ -141,9 +160,10 @@ class GenerateBaseStations(
                 RoadWeatherConditions,
                 Down,
                 cpuLength = 800.0,
-                cpuLengthGenerator = { logNormal(800.0) }
+                cpuLengthGenerator = { logNormal(800.0) },
+                dataSize = 30_720.0
             )
-            addAppEdge(DriverAssistanceSystem, SpeedControl, EstimatedBreakingDistance, Actuator, appEdgeType = ToActuator, cpuLength = 14.0, dataSize = 1.0)
+            addAppEdge(DriverAssistanceSystem, SpeedControl, EstimatedBreakingDistance, Actuator, appEdgeType = ToActuator, cpuLength = 14.0, dataSize = 100.0)
 
             addAppLoop(
                 NIRCamera,
@@ -176,10 +196,12 @@ class GenerateBaseStations(
     private fun addVehicle() = simulation.run {
         addFogDevice(
             Vehicle,
-            level = FogDeviceLevel.User,
-            mips = logNormal(350.0).toLong(),
+            level = User,
+            mips = logNormal(2200.0).toLong(),
             ram = logNormal(256.0).toInt(),
-            downlinkBandwidth = logNormal(270.0).toLong(),
+            bandwidth = logNormal(52_428_800.0).toLong(),
+            downlinkBandwidth = logNormal(512_000.0).toLong(),
+            uplinkBandwidth = logNormal(52_428_800.0).toLong(),
             uplinkLatency = logNormal(2.0),
             busyPower = 87.53,
             idlePower = 82.44,
@@ -189,8 +211,8 @@ class GenerateBaseStations(
                 addSensor(
                     gateway = vehicle,
                     tupleType = NIRCamera,
-                    latency = 6.0,
-                    emissionDistribution = DeterministicDistribution(100.0)
+                    latency = 1.0,
+                    emissionDistribution = PoissonFPS(30)
                 )
                 addActuator(
                     gateway = vehicle,
@@ -205,8 +227,12 @@ class GenerateBaseStations(
         addFogDevice(
             FiveGRadioUnit,
             level = Gateway,
-            mips = logNormal(3550.0).toLong(),
+            mips = logNormal(3600.0).toLong(),
             ram = logNormal(2500.0).toInt(),
+            bandwidth = logNormal(21_474_836_480.0).toLong(),
+            downlinkBandwidth = logNormal(21_474_836_480.0).toLong(),
+            uplinkBandwidth = logNormal(10_737_418_240.0).toLong(),
+            clusterLinkBandwidth = logNormal(21_474_836_480.0).toLong(),
             uplinkLatency = logNormal(60.0),
             busyPower = 107.339,
             idlePower = 83.4333,
@@ -221,8 +247,9 @@ class GenerateBaseStations(
             ProxyServer,
             level = Proxy,
             parentId = cloudId,
-            mips = logNormal(8000.0).toLong(),
-            ram = logNormal(5000.0).toInt(),
+            mips = 2 * logNormal(3300.0).toLong(),
+            ram = logNormal(4000.0).toInt(),
+            bandwidth = logNormal(21_474_836_480.0).toLong(),
             uplinkLatency = logNormal(100.0),
             busyPower = 107.339,
             idlePower = 83.4333,
@@ -239,10 +266,9 @@ class GenerateBaseStations(
         val cloud = addFogDevice(
             cloud,
             level = FogDeviceLevel.Cloud,
-            mips = 50_000,
+            mips = 96 * 3100,
             ram = 40_000,
-            downlinkBandwidth = 40_000,
-            uplinkBandwidth = 100,
+            bandwidth = logNormal(21_474_836_480.0).toLong(),
             costRatePerMips = 0.001,
             busyPower = 16 * 103.0,
             idlePower = 16 * 83.25,
