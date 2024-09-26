@@ -3,6 +3,8 @@ import vue from '@vitejs/plugin-vue'
 import mkcert from 'vite-plugin-mkcert';
 import fs from 'node:fs';
 import { IncomingMessage, ServerResponse } from "http";
+import svgLoader from 'vite-svg-loader';
+import { fileURLToPath, URL } from "url";
 
 const simulationDir = '../simulations'
 
@@ -45,5 +47,25 @@ export default defineConfig({
       }
     }
   },
-  plugins: [ vue(), mkcert() ]
+  plugins: [
+    vue(),
+    mkcert(),
+    svgLoader({
+      svgoConfig: {
+        plugins: [
+          {
+            name: 'addAttributesToSVGElement',
+            params: {
+              attributes: [{ fill: 'currentColor' }],
+            },
+          },
+        ],
+      },
+    }),
+  ],
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
 })

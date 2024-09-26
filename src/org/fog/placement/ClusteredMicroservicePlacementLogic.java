@@ -69,6 +69,7 @@ public class ClusteredMicroservicePlacementLogic implements MicroservicePlacemen
         PlacementLogicOutput placement = generatePlacementMap();
         updateResources(resourceAvailability);
         postProcessing();
+        Logger.debug("Placement", placement.perDevice.toString());
         return placement;
     }
 
@@ -227,7 +228,6 @@ public class ClusteredMicroservicePlacementLogic implements MicroservicePlacemen
                     if (getModule(microservice, app).getMips() + getCurrentCpuLoad().get(deviceId) <= resourceAvailability.get(deviceId).get(ControllerComponent.CPU)) {
                         Logger.debug("ModulePlacementEdgeward", "Placement of operator " + microservice + " on device " + device.getName() + " successful.");
                         getCurrentCpuLoad().put(deviceId, getModule(microservice, app).getMips() + getCurrentCpuLoad().get(deviceId));
-                        System.out.println("Placement of operator " + microservice + " on device " + device.getName() + " successful.");
 
                         moduleToApp.put(microservice, app.getAppId());
 

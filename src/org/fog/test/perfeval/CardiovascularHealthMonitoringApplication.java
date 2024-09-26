@@ -85,11 +85,8 @@ public class CardiovascularHealthMonitoringApplication {
             int num_user = 1; // number of cloud users
             Calendar calendar = Calendar.getInstance();
             boolean trace_flag = false; // mean trace events
-
             CloudSim.init(num_user, calendar, trace_flag);
-
             String appId = "Cardiovascular Health Monitoring Application CHM)"; // identifier of the application
-
             FogBroker broker = new FogBroker("broker");
 
             Application application = createApplication(appId, broker.getId());
@@ -110,34 +107,29 @@ public class CardiovascularHealthMonitoringApplication {
 
             List<Integer> clusterLevelIdentifier = new ArrayList<>();
             clusterLevelIdentifier.add(2);
-
-            /**
-             * Central controller for performing preprocessing functions
-             */
             List<Application> appList = new ArrayList<>();
             appList.add(application);
 
 
             int placementAlgo = PlacementLogicFactory.CLUSTERED_MICROSERVICES_PLACEMENT;
-            MicroservicesMobilityClusteringController microservicesController = new MicroservicesMobilityClusteringController("controller", fogDevices, sensors, appList, clusterLevelIdentifier, clusterLatency, placementAlgo,locator);
+            MicroservicesMobilityClusteringController microservicesController =
+                    new MicroservicesMobilityClusteringController("controller", fogDevices, sensors, appList,
+                            clusterLevelIdentifier, clusterLatency, placementAlgo,locator);
 
             // generate placement requests
             List<PlacementRequest> placementRequests = new ArrayList<>();
             for (Sensor s : sensors) {
                 Map<String, Integer> placedMicroservicesMap = new HashMap<>();
                 placedMicroservicesMap.put("clientModule", s.getGatewayDeviceId());
-                PlacementRequest p = new PlacementRequest(s.getAppId(), s.getId(), s.getGatewayDeviceId(), placedMicroservicesMap);
+                PlacementRequest p = new PlacementRequest(s.getAppId(), s.getId(), s.getGatewayDeviceId(),
+                        placedMicroservicesMap);
                 placementRequests.add(p);
             }
 
             microservicesController.submitPlacementRequests(placementRequests, 1);
-
             TimeKeeper.getInstance().setSimulationStartTime(Calendar.getInstance().getTimeInMillis());
-
             CloudSim.startSimulation();
-
             CloudSim.stopSimulation();
-
             Log.printLine("CHM app finished!");
         } catch (Exception e) {
             e.printStackTrace();
@@ -280,20 +272,41 @@ public class CardiovascularHealthMonitoringApplication {
     }
 
     private static FogDevice addMobile(String name, int userId, Application app, int parentId) {
-        FogDevice mobile = createFogDevice(name, 200, 2048, 10000, 270, 0, 87.53, 82.44, MicroserviceFogDevice.CLIENT);
+        FogDevice mobile = createFogDevice(
+                name,
+                200,
+                2048,
+                10000,
+                270,
+                0,
+                87.53,
+                82.44,
+                MicroserviceFogDevice.CLIENT
+        );
         mobile.setParentId(parentId);
         //locator.setInitialLocation(name,drone.getId());
-        Sensor mobileSensor = new Sensor("s-" + name, "SENSOR", userId, app.getAppId(), new DeterministicDistribution(SENSOR_TRANSMISSION_TIME)); // inter-transmission time of EEG sensor follows a deterministic distribution
+        Sensor mobileSensor = new Sensor(
+                "s-" + name,
+                "SENSOR",
+                userId,
+                app.getAppId(),
+                new DeterministicDistribution(SENSOR_TRANSMISSION_TIME)
+        ); // inter-transmission time of EEG sensor follows a deterministic distribution
         mobileSensor.setApp(app);
         sensors.add(mobileSensor);
-        Actuator mobileDisplay = new Actuator("a-" + name, userId, app.getAppId(), "DISPLAY");
+        Actuator mobileDisplay = new Actuator(
+                "a-" + name,
+                userId,
+                app.getAppId(),
+                "DISPLAY"
+        );
         actuators.add(mobileDisplay);
 
         mobileSensor.setGatewayDeviceId(mobile.getId());
-        mobileSensor.setLatency(6.0);  // latency of connection between EEG sensors and the parent Smartphone is 6 ms
+        mobileSensor.setLatency(6.0);
 
         mobileDisplay.setGatewayDeviceId(mobile.getId());
-        mobileDisplay.setLatency(1.0);  // latency of connection between Display actuator and the parent Smartphone is 1 ms
+        mobileDisplay.setLatency(1.0);
         mobileDisplay.setApp(app);
 
         return mobile;

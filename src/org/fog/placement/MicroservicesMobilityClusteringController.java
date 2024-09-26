@@ -14,6 +14,7 @@ import org.fog.entities.PlacementRequest;
 import org.fog.mobilitydata.References;
 import org.fog.utils.Config;
 import org.fog.utils.FogEvents;
+import org.fog.utils.Logger;
 import org.fog.utils.MigrationDelayMonitor;
 import org.json.simple.JSONObject;
 
@@ -158,7 +159,7 @@ public class MicroservicesMobilityClusteringController extends MicroservicesCont
             double latency = fogDevice.getUplinkLatency();
             parent.getChildToLatencyMap().put(fogDevice.getId(), latency);
             parent.getChildrenIds().add(fogDevice.getId());
-            System.out.println("Child " + fogDevice.getName() + "\t----->\tParent " + parent.getName());
+            Logger.debug("INITIAL NETWORK", "Child " + fogDevice.getName() + "\t----->\tParent " + parent.getName());
         }
     }
 
@@ -168,7 +169,6 @@ public class MicroservicesMobilityClusteringController extends MicroservicesCont
         FogDevice fogDevice = (FogDevice) ev.getData();
         FogDevice prevParent = getFogDeviceById(parentReference.get(fogDevice.getId()));
         FogDevice newParent = getFogDeviceById(locator.determineParent(fogDevice.getId(), CloudSim.clock()));
-        System.out.println(CloudSim.clock() + " Starting Mobility Management for " + fogDevice.getName());
         parentReference.put(fogDevice.getId(), newParent.getId());
         Map<String, Integer> migratingModules = new HashMap<>(); // migrating module _> it's device (can be preParent or  device the same cluster
         setNewOrchestratorNode(fogDevice,newParent);
@@ -184,7 +184,7 @@ public class MicroservicesMobilityClusteringController extends MicroservicesCont
 
 
             fogDevice.setParentId(newParent.getId());
-            System.out.println("Child " + fogDevice.getName() + "\t----->\tParent " + newParent.getName());
+            Logger.debug("MOBILITY MIGRATION", "Child " + fogDevice.getName() + "\t----->\tParent " + newParent.getName());
             newParent.getChildToLatencyMap().put(fogDevice.getId(), fogDevice.getUplinkLatency());
             newParent.addChild(fogDevice.getId());
             prevParent.removeChild(fogDevice.getId());
@@ -212,7 +212,7 @@ public class MicroservicesMobilityClusteringController extends MicroservicesCont
 
                     send(migratingModules.get(moduleName), upDelay, FogEvents.MODULE_SEND, jsonSend);
                     send(newParent.getId(), downDelay, FogEvents.MODULE_RECEIVE, jsonReceive);
-                    System.out.println("Migrating " + moduleName + " from " + prevParent.getName() + " to " + newParent.getName());
+                    Logger.debug("MOBILITY MIGRATION", "Migrating " + moduleName + " from " + prevParent.getName() + " to " + newParent.getName());
                 }
 
                 serviceDiscoveryUpdate(fogDevice, migratingModules, applicationName, newParent.getId(), upDelays, downDelays);

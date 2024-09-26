@@ -10,7 +10,7 @@ import org.fog.mobilitydata.References.*
 import org.fog.utils.distribution.DeterministicDistribution
 
 fun main() {
-    enableReporting()
+//    enableReporting()
     CHM().run()
 }
 
@@ -68,8 +68,8 @@ class CHM {
         reportSimulation(simulation, "./simulations")
     }
 
-    private fun initializeApplication() = simulation.apply {
-        appModule(
+    private fun initializeApplication() = simulation.addApplication("").apply {
+        addAppModule(
             Modules.Client,
             ram = 128,
             mips = 150.0,
@@ -80,7 +80,7 @@ class CHM {
                 forwarding(Tuples.Result2 to Tuples.Result2Display)
             )
         )
-        appModule(
+        addAppModule(
             Modules.Service1,
             ram = 512,
             mips = 250.0,
@@ -90,7 +90,7 @@ class CHM {
                 forwarding(Tuples.RawData to Tuples.FilteredData2)
             )
         )
-        appModule(
+        addAppModule(
             Modules.Service2,
             ram = 512,
             mips = 350.0,
@@ -99,7 +99,7 @@ class CHM {
                 forwarding(Tuples.FilteredData1 to Tuples.Result1)
             )
         )
-        appModule(
+        addAppModule(
             Modules.Service3,
             ram = 2048,
             mips = 450.0,
@@ -109,7 +109,7 @@ class CHM {
             )
         )
 
-        appEdge(
+        addAppEdge(
             SENSOR,
             Modules.Client,
             SENSOR,
@@ -117,18 +117,18 @@ class CHM {
             appEdgeType = FromSensor,
             cpuLength = 1000.0
         )
-        appEdge(Modules.Client, Modules.Service1, Tuples.RawData, Up, cpuLength = 2000.0)
-        appEdge(Modules.Service1, Modules.Service2, Tuples.FilteredData1, Up, cpuLength = 2500.0)
-        appEdge(Modules.Service1, Modules.Service3, Tuples.FilteredData2, Up, cpuLength = 4000.0)
+        addAppEdge(Modules.Client, Modules.Service1, Tuples.RawData, Up, cpuLength = 2000.0)
+        addAppEdge(Modules.Service1, Modules.Service2, Tuples.FilteredData1, Up, cpuLength = 2500.0)
+        addAppEdge(Modules.Service1, Modules.Service3, Tuples.FilteredData2, Up, cpuLength = 4000.0)
 
-        appEdge(Modules.Service2, Modules.Client, Tuples.Result1, Down, cpuLength = 14.0)
-        appEdge(Modules.Service3, Modules.Client, Tuples.Result2, Down, cpuLength = 28.0)
-        appEdge(Modules.Client, Modules.Display, Tuples.Result1Display, Down, appEdgeType = ToActuator, cpuLength = 14.0)
-        appEdge(Modules.Client, Modules.Display, Tuples.Result2Display, Down, appEdgeType = ToActuator, cpuLength = 14.0)
+        addAppEdge(Modules.Service2, Modules.Client, Tuples.Result1, Down, cpuLength = 14.0)
+        addAppEdge(Modules.Service3, Modules.Client, Tuples.Result2, Down, cpuLength = 28.0)
+        addAppEdge(Modules.Client, Modules.Display, Tuples.Result1Display, Down, appEdgeType = ToActuator, cpuLength = 14.0)
+        addAppEdge(Modules.Client, Modules.Display, Tuples.Result2Display, Down, appEdgeType = ToActuator, cpuLength = 14.0)
 
-        app.setSpecialPlacementInfo(Modules.Service3.name, "cloud")
+        application.setSpecialPlacementInfo(Modules.Service3.name, "cloud")
 
-        appLoop(
+        addAppLoop(
             SENSOR,
             Modules.Client,
             Modules.Service1,
@@ -145,18 +145,18 @@ class CHM {
             randMobilityGenerator.createRandomData(random_walk_mobility_model, it, dataset_random, false)
         }
 
-        environment.locator.parseUserInfo(
+        network.locator.parseUserInfo(
             (1..simulation.config.numberOfMobileUser).associateWith { DIRECTIONAL_MOBILITY },
             dataset_random
         )
 
-        environment.locator.mobileUserDataId.forEach { userId ->
+        network.locator.mobileUserDataId.forEach { userId ->
             addMobile(userId)
         }
     }
 
     private fun addMobile(locatorUserId: String) = simulation.apply {
-        val mobile = fogDevice(
+        val mobile = addFogDevice(
             FogDevices.Mobile,
             level = FogDeviceLevel.User,
             microservicesFogDeviceType = MicroservicesFogDeviceType.Client,
@@ -168,27 +168,27 @@ class CHM {
             idlePower = 82.44,
         )
 
-        sensor(
+        workload[""]!!.addSensor(
             gateway = mobile,
             tupleType = SENSOR,
             latency = 6.0,
             emissionDistribution = DeterministicDistribution(simulation.config.sensorTransmissionTime)
         )
 
-        actuator(
+        workload[""]!!.addActuator(
             gateway = mobile,
             module = Modules.Display,
             latency = 1.0,
         )
-        environment.locator.linkDataWithInstance(mobile.id, locatorUserId)
+        network.locator.linkDataWithInstance(mobile.id, locatorUserId)
     }
 
     private fun initializeFogDevices() = simulation.apply {
-        environment.locator.parseResourceInfo()
-        val cloudLocationId = environment.locator.getLevelWiseResources(FogDeviceLevel.Cloud.id).firstOrNull()
+        network.locator.parseResourceInfo()
+        val cloudLocationId = network.locator.getLevelWiseResources(FogDeviceLevel.Cloud.id).firstOrNull()
         check(cloudLocationId != null) { "Incorrectly parsed location info" }
 
-        val cloud = fogDevice(
+        val cloud = addFogDevice(
             FogDevices.cloud,
             level = FogDeviceLevel.Cloud,
             microservicesFogDeviceType = MicroservicesFogDeviceType.Cloud,
@@ -199,11 +199,11 @@ class CHM {
             busyPower = 16 * 103.0,
             idlePower = 16 * 83.25,
         ).also {
-            environment.locator.linkDataWithInstance(it.id, cloudLocationId)
+            network.locator.linkDataWithInstance(it.id, cloudLocationId)
         }
 
-        environment.locator.getLevelWiseResources(FogDeviceLevel.Proxy.id).forEach { proxyId ->
-            fogDevice(
+        network.locator.getLevelWiseResources(FogDeviceLevel.Proxy.id).forEach { proxyId ->
+            addFogDevice(
                 FogDevices.ProxyServer,
                 level = FogDeviceLevel.Proxy,
                 microservicesFogDeviceType = MicroservicesFogDeviceType.FON,
@@ -214,12 +214,12 @@ class CHM {
                 busyPower = 107.339,
                 idlePower = 83.4333,
             ).also {
-                environment.locator.linkDataWithInstance(it.id, proxyId)
+                network.locator.linkDataWithInstance(it.id, proxyId)
             }
         }
 
-        environment.locator.getLevelWiseResources(FogDeviceLevel.Gateway.id).forEach { gatewayId ->
-            fogDevice(
+        network.locator.getLevelWiseResources(FogDeviceLevel.Gateway.id).forEach { gatewayId ->
+            addFogDevice(
                 FogDevices.Gateway,
                 level = FogDeviceLevel.Gateway,
                 microservicesFogDeviceType = MicroservicesFogDeviceType.FCN,
@@ -229,8 +229,8 @@ class CHM {
                 busyPower = 107.339,
                 idlePower = 83.4333,
             ).also {
-                environment.locator.linkDataWithInstance(it.id, gatewayId)
-                it.parentId = environment.locator.determineParent(it.id, SETUP_TIME)
+                network.locator.linkDataWithInstance(it.id, gatewayId)
+                it.parentId = network.locator.determineParent(it.id, SETUP_TIME)
             }
         }
     }

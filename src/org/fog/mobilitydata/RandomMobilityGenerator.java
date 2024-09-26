@@ -1,5 +1,6 @@
 package org.fog.mobilitydata;
 
+import org.fog.utils.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -75,25 +76,15 @@ public class RandomMobilityGenerator {
 
     public void createRandomData(int mobilityModel, int user_index, String datasetReference, boolean renewDataset) throws IOException, ParseException {
         // To check different mobility models, if you applied other mobility models, they can be customized here
-        String fileName = References.dataset_random + user_index + ".csv";
+        String fileName = datasetReference + user_index + ".csv";
         File tmpDir = new File(fileName);
         boolean exists = tmpDir.exists();
-        if (exists && renewDataset) {
-            System.out.println("The dataset: " + fileName + " is being overwritten.");
-            if (mobilityModel == References.random_walk_mobility_model) {
-                MobilityPositionInitiator(References.random_walk_mobility_model, 100, user_index);
-            } else if (mobilityModel == References.random_waypoint_mobility_model) {
-                MobilityPositionInitiator(References.random_waypoint_mobility_model, 100, user_index);
-            }
-        } else if (!exists) {
-            System.out.println("The dataset: " + fileName + " is going to be created for the first time.");
-            if (mobilityModel == References.random_walk_mobility_model) {
-                MobilityPositionInitiator(References.random_walk_mobility_model, 100, user_index);
-            } else if (mobilityModel == References.random_waypoint_mobility_model) {
-                MobilityPositionInitiator(References.random_waypoint_mobility_model, 100, user_index);
-            }
+        if (!exists || renewDataset) {
+            Logger.debug("DATA GENERATION", "Dataset: " + fileName + " is being created");
+            MobilityPositionInitiator(mobilityModel, 100, user_index);
+            writeMobilityDataset(fileName);
         } else {
-            System.out.println("The dataset: " + fileName + " exists already.");
+            Logger.debug("DATA GENERATION", "The dataset: " + fileName + " exists already.");
             // DO NOTHING
         }
 
@@ -110,7 +101,6 @@ public class RandomMobilityGenerator {
         Random r = new Random();
 
         boolean file = false;
-
 
         if (file == false) {
             List<ArrayList<Double>> tempPositions = new ArrayList<ArrayList<Double>>();
@@ -142,7 +132,7 @@ public class RandomMobilityGenerator {
             this.mobilitySpecJSON.add(obj);
             while (index < numberOfPositions) {
                 if (this.directionFlag == false || mobilityModel == References.random_walk_mobility_model) {
-                    this.angle = getRandomNumberInRange(0, 259); // Random direction.
+                    this.angle = getRandomNumberInRange(0, 359); // Random direction.
                     this.directionFlag = true;
                 }
                 double mobilitySpeed = (double) (getRandomNumberInRange((int) References.MinMobilitySpeed * 100,
@@ -196,39 +186,41 @@ public class RandomMobilityGenerator {
 
                 index++;
             }
-
-            // File input path
-            System.out.println("Starting Writing Mobile User Information ...");
-
-            try (PrintWriter writer = new PrintWriter(new File(References.dataset_random + user_index + ".csv"))) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Latitude");
-                sb.append(',');
-                sb.append("Longitude");
-                sb.append('\n');
-                writer.write(sb.toString());
-                sb.setLength(0); // clear stringbuilder
-                for (int i = 0; i < this.mobilityPositions.size(); i++) {
-                    sb.append(this.mobilityPositions.get(i).get(0));
-                    sb.append(',');
-                    sb.append(this.mobilityPositions.get(i).get(1));
-                    sb.append('\n');
-                    writer.write(sb.toString());
-                    sb.setLength(0); // clear stringbuilder
-                }
-
-                writer.close();
-                System.out.println("done!");
-
-            } catch (FileNotFoundException e) {
-                System.out.println(e.getMessage());
-            }
-
-            System.out.println("Finished Writing Mobile User Information ...");
-
+            References.lat_reference = positionX;
+            References.long_reference = positionY;
         }
 
 
+    }
+
+    private void writeMobilityDataset(String fileName) {
+        System.out.println("Starting Writing Mobile User Information ...");
+
+        try (PrintWriter writer = new PrintWriter(new File(fileName))) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Latitude");
+            sb.append(',');
+            sb.append("Longitude");
+            sb.append('\n');
+            writer.write(sb.toString());
+            sb.setLength(0); // clear stringbuilder
+            for (int i = 0; i < this.mobilityPositions.size(); i++) {
+                sb.append(this.mobilityPositions.get(i).get(0));
+                sb.append(',');
+                sb.append(this.mobilityPositions.get(i).get(1));
+                sb.append('\n');
+                writer.write(sb.toString());
+                sb.setLength(0); // clear stringbuilder
+            }
+
+            writer.close();
+            System.out.println("done!");
+
+        } catch (FileNotFoundException e) {
+            System.out.println(e.getMessage());
+        }
+
+        System.out.println("Finished Writing Mobile User Information ...");
     }
 
 }

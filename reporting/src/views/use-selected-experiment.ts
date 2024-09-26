@@ -1,33 +1,56 @@
-import { computed, ref } from "vue";
-import { ExperimentDetails } from "../types/types";
+import { ref } from "vue";
+import { AggregateExperimentDetails, ExperimentDetails } from "@/types/types";
 import useFetchExperimentDetails from "./use-fetch-experiment-details";
+import { aggregateExperiment } from "@/views/aggregate-experiment";
+import { debounce } from "lodash";
 
-const experimentDetails = new Map<string, ExperimentDetails>()
-const selectedExperimentId = ref<{ app: string, experiment: string }>()
-const selectedExperiment = computed(() => experimentDetails.get(experimentId(selectedExperimentId.value)))
+const experimentDetails = new Map<string, Promise<ExperimentDetails>>()
+const selectedExperiment = ref<ExperimentDetails | AggregateExperimentDetails | null>(null)
 
-function experimentId(experiment: {app: string, experiment: string} | undefined) {
+export function experimentId(experiment: {app: string, experiment: string} | undefined) {
   return (experiment && `${experiment.app}/${experiment.experiment}`) ?? ''
+}
+
+export function idToExperiment(experimentId: string): {app: string, experiment: string} {
+  const [app, experiment] = experimentId.split('/')
+  return { app, experiment }
 }
 
 export default function useSelectedExperiment() {
   const { fetch } = useFetchExperimentDetails()
 
-  function selectExperiment(app: string, experiment: string) {
-    const id = experimentId({ app, experiment });
-    if (experimentDetails.has(id)) {
-      selectedExperimentId.value = { app, experiment };
+  async function loadExperiment(id: { app: string, experiment: string }): Promise<ExperimentDetails> {
+    const experiment = experimentDetails.get(experimentId(id))
+    if (experiment) {
+      return experiment
     } else {
-      fetch(app, experiment).then(result => {
-        experimentDetails.set(experimentId({ app, experiment }), result)
-        selectedExperimentId.value = { app, experiment };
-      })
+      const fetchExperiment = fetch(id.app, id.experiment)
+      experimentDetails.set(experimentId(id), fetchExperiment)
+      return fetchExperiment
+    }
+  }
+
+  const setSelectedExperiment = debounce((value: ExperimentDetails | AggregateExperimentDetails | null) => {
+    selectedExperiment.value = value
+  }, 500)
+
+  async function selectExperiment(selection: { app: string, experiment: string }[], noDebounce: boolean) {
+    const experiments = await Promise.all(selection.map(loadExperiment))
+    if (experiments.length === 0) {
+      return
+    }
+    if (experiments.length === 1) {
+      setSelectedExperiment(experiments[0])
+    } else {
+      setSelectedExperiment(aggregateExperiment(experiments))
+    }
+    if (noDebounce) {
+      setSelectedExperiment.flush()
     }
   }
 
 
   return {
-    selectedExperimentId,
     selectedExperiment,
     selectExperiment
   }

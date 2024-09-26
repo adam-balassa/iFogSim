@@ -11,6 +11,7 @@ import org.fog.entities.*;
 import org.fog.utils.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by Samodha Pallewatta on 7/31/2020.
@@ -134,9 +135,9 @@ public class MicroservicesController extends SimEntity {
     }
 
     public void startEntity() {
-        if (MicroservicePlacementConfig.SIMULATION_MODE == "STATIC")
+        if (MicroservicePlacementConfig.SIMULATION_MODE.equals("STATIC"))
             initiatePlacementRequestProcessing();
-        if (MicroservicePlacementConfig.SIMULATION_MODE == "DYNAMIC")
+        if (MicroservicePlacementConfig.SIMULATION_MODE.equals("DYNAMIC"))
             initiatePlacementRequestProcessingDynamic();
 
         if (MicroservicePlacementConfig.ENABLE_RESOURCE_DATA_SHARING) {
@@ -167,9 +168,9 @@ public class MicroservicesController extends SimEntity {
             } else
                 send(p.getGatewayDeviceId(), placementRequestDelayMap.get(p), FogEvents.TRANSMIT_PR, p);
         }
-        if (MicroservicePlacementConfig.PR_PROCESSING_MODE == MicroservicePlacementConfig.PERIODIC) {
+        if (MicroservicePlacementConfig.PR_PROCESSING_MODE.equals(MicroservicePlacementConfig.PERIODIC)) {
             for (FogDevice f : fogDevices) {
-                if (((MicroserviceFogDevice) f).getDeviceType() == MicroserviceFogDevice.FON) {
+                if (((MicroserviceFogDevice) f).getDeviceType().equals(MicroserviceFogDevice.FON)) {
                     sendNow(f.getId(), FogEvents.PROCESS_PRS);
                 }
             }
@@ -185,11 +186,18 @@ public class MicroservicesController extends SimEntity {
             } else
                 send(getId(), placementRequestDelayMap.get(p), FogEvents.TRANSMIT_PR, p);
         }
-        if (MicroservicePlacementConfig.PR_PROCESSING_MODE == MicroservicePlacementConfig.PERIODIC) {
-            for (FogDevice f : fogDevices) {
-                if (((MicroserviceFogDevice) f).getDeviceType() == MicroserviceFogDevice.FON) {
-                    sendNow(f.getId(), FogEvents.PROCESS_PRS);
-                }
+        if (MicroservicePlacementConfig.PR_PROCESSING_MODE.equals(MicroservicePlacementConfig.PERIODIC)) {
+            List<FogDevice> fons = fogDevices.stream()
+                    .map(f -> (MicroserviceFogDevice) f)
+                    .filter(d -> d.getDeviceType().equals(MicroserviceFogDevice.FON))
+                    .collect(Collectors.toList());
+            if (!fons.isEmpty()) {
+                fons.forEach(fon -> sendNow(fon.getId(), FogEvents.PROCESS_PRS));
+            } else {
+                fogDevices.stream()
+                        .map(f -> (MicroserviceFogDevice) f)
+                        .filter(d -> d.getDeviceType().equals(MicroserviceFogDevice.CLOUD))
+                        .findFirst().ifPresent(cloud -> sendNow(cloud.getId(), FogEvents.PROCESS_PRS));
             }
         }
     }

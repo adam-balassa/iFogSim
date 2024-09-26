@@ -14,6 +14,7 @@ import java.util.List;
 import org.cloudbus.cloudsim.Pe;
 import org.cloudbus.cloudsim.VmSchedulerTimeSharedOverSubscription;
 import org.cloudbus.cloudsim.core.CloudSim;
+import org.cloudbus.cloudsim.lists.PeList;
 import org.cloudbus.cloudsim.sdn.power.PowerUtilizationHistoryEntry;
 import org.cloudbus.cloudsim.sdn.power.PowerUtilizationInterface;
 
@@ -94,6 +95,6 @@ public class VmSchedulerTimeSharedOverbookingEnergy extends VmSchedulerTimeShare
 	}
 	
 	private double getTotalMips() {
-		return this.getPeList().size() * this.getPeCapacity();
+		return PeList.getTotalMips(this.getPeList());
 	}
 }

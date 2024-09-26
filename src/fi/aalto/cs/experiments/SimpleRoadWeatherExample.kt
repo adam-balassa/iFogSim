@@ -2,9 +2,13 @@
 
 package fi.aalto.cs.experiments
 
+import fi.aalto.cs.experiments.SimpleRoadWeatherExample.FogDevices.*
+import fi.aalto.cs.experiments.SimpleRoadWeatherExample.Modules.*
+import fi.aalto.cs.experiments.SimpleRoadWeatherExample.Tuples.*
 import fi.aalto.cs.utils.*
-import fi.aalto.cs.utils.AppEdgeType.FromSensor
-import fi.aalto.cs.utils.AppEdgeType.ToActuator
+import fi.aalto.cs.utils.AppEdgeType.*
+import fi.aalto.cs.utils.FogDeviceLevel.Gateway
+import fi.aalto.cs.utils.FogDeviceLevel.Proxy
 import fi.aalto.cs.utils.MicroservicesFogDeviceType.*
 import fi.aalto.cs.utils.ModulePlacementStrategy.Static
 import fi.aalto.cs.utils.TupleDirection.*
@@ -40,12 +44,13 @@ class SimpleRoadWeatherExample {
     private val simulation = Simulation(
         "Simple road weather example",
         object {
-            val numberOfVehiclesPerRU = 3
-            val numberOfRadioUnitsPerParent = 3
+            val numberOfVehiclesPerRU = 8
+            val numberOfRadioUnitsPerParent = 2
             val numberOfProxyServers = 2
             val nirCameraFPS = 10
-            val classificationModulePlacement = FogDevices.FiveGRadioUnit
+            val classificationModulePlacement = FiveGRadioUnit
             val microserviceController = true
+            val stochasticAppEdge = true
         },
     )
 
@@ -56,16 +61,16 @@ class SimpleRoadWeatherExample {
         simulation.apply {
             if (config.microserviceController) {
                 microservicesController(
-                    clusterLevels = listOf(FogDeviceLevel.Gateway),
+                    clusterLevels = listOf(Gateway),
                     clusterLinkLatency = 2,
-                    clientModule = Modules.DriverAssistanceSystem
+                    clientModule = DriverAssistanceSystem
                 )
             } else {
                 controller(
                     placementStrategy = Static,
                     staticPlacement = mapOf(
-                        Modules.DriverAssistanceSystem to FogDevices.Vehicle,
-                        Modules.RoadWeatherClassification to config.classificationModulePlacement
+                        DriverAssistanceSystem to Vehicle,
+                        RoadWeatherClassification to config.classificationModulePlacement
                     )
                 )
             }
@@ -78,44 +83,68 @@ class SimpleRoadWeatherExample {
     }
 
     private fun initializeApplication() = simulation.apply {
-        appModule(
-            Modules.DriverAssistanceSystem,
-            ram = 128,
-            mips = 100.0,
-            storage = 100,
-            selectivityMapping = mapOf(
-                forwarding(NIRCamera to Tuples.NIRCameraImage),
-                forwarding(Tuples.RoadWeatherConditions to Tuples.EstimatedBreakingDistance, 0.2)
+        addApplication("").apply {
+            addAppModule(
+                DriverAssistanceSystem,
+                ram = 128,
+                mips = 100.0,
+                storage = 100,
+                selectivityMapping = mapOf(
+                    forwarding(NIRCamera to NIRCameraImage),
+                    forwarding(RoadWeatherConditions to EstimatedBreakingDistance, 0.2)
+                )
             )
-        )
-        appModule(
-            Modules.RoadWeatherClassification,
-            ram = 1024,
-            mips = 2500.0,
-            storage = 200,
-            selectivityMapping = mapOf(
-                forwarding(Tuples.NIRCameraImage to Tuples.RoadWeatherConditions),
+            addAppModule(
+                RoadWeatherClassification,
+                ram = 1024,
+                mips = 2500.0,
+                storage = 200,
+                selectivityMapping = mapOf(
+                    forwarding(NIRCameraImage to RoadWeatherConditions),
+                )
             )
-        )
 
-        appEdge(NIRCamera, Modules.DriverAssistanceSystem, NIRCamera, Up, appEdgeType = FromSensor, cpuLength = 500.0)
-        appEdge(Modules.DriverAssistanceSystem, Modules.RoadWeatherClassification, Tuples.NIRCameraImage, Up, cpuLength = 5000.0)
+            addAppEdge(
+                NIRCamera,
+                DriverAssistanceSystem,
+                NIRCamera,
+                Up,
+                appEdgeType = FromSensor,
+                cpuLength = 500.0,
+                cpuLengthGenerator = if (config.stochasticAppEdge) { { poisson(500.0, 20.0) } } else null
+            )
+            addAppEdge(
+                DriverAssistanceSystem,
+                RoadWeatherClassification,
+                NIRCameraImage,
+                Up,
+                cpuLength = 5000.0,
+                cpuLengthGenerator = if (config.stochasticAppEdge) { { poisson(5000.0, 40.0) } } else null
+            )
 
-        appEdge(Modules.RoadWeatherClassification, Modules.DriverAssistanceSystem, Tuples.RoadWeatherConditions, Down, cpuLength = 1000.0)
-        appEdge(Modules.DriverAssistanceSystem, Modules.SpeedControl, Tuples.EstimatedBreakingDistance, Actuator, appEdgeType = ToActuator, cpuLength = 14.0, dataSize = 1.0)
+            addAppEdge(
+                RoadWeatherClassification,
+                DriverAssistanceSystem,
+                RoadWeatherConditions,
+                Down,
+                cpuLength = 1000.0,
+                cpuLengthGenerator = if (config.stochasticAppEdge) { { poisson(1000.0, 30.0) } } else null
+            )
+            addAppEdge(DriverAssistanceSystem, SpeedControl, EstimatedBreakingDistance, Actuator, appEdgeType = ToActuator, cpuLength = 14.0, dataSize = 1.0)
 
-        appLoop(
-            NIRCamera,
-            Modules.DriverAssistanceSystem,
-            Modules.RoadWeatherClassification,
-            Modules.DriverAssistanceSystem,
-            Modules.SpeedControl,
-        )
+            addAppLoop(
+                NIRCamera,
+                DriverAssistanceSystem,
+                RoadWeatherClassification,
+                DriverAssistanceSystem,
+                SpeedControl,
+            )
+        }
     }
 
     private fun addVehicle(connectedRadioUnit: Int) = simulation.apply {
-        val vehicle = fogDevice(
-            FogDevices.Vehicle,
+        val vehicle = addFogDevice(
+            Vehicle,
             level = FogDeviceLevel.User,
             mips = 150,
             ram = 256,
@@ -126,32 +155,34 @@ class SimpleRoadWeatherExample {
             idlePower = 82.44,
             microservicesFogDeviceType = if (config.microserviceController) Client else null
         )
+        workload[""]!!.apply {
+            addSensor(
+                gateway = vehicle,
+                tupleType = NIRCamera,
+                latency = 6.0,
+                emissionDistribution = DeterministicDistribution(1000.0 / config.nirCameraFPS)
+            )
 
-        sensor(
-            gateway = vehicle,
-            tupleType = NIRCamera,
-            latency = 6.0,
-            emissionDistribution = DeterministicDistribution(1000.0 / config.nirCameraFPS)
-        )
-
-        actuator(
-            gateway = vehicle,
-            module = Modules.SpeedControl,
-            latency = 1.0,
-        )
+            addActuator(
+                gateway = vehicle,
+                module = SpeedControl,
+                latency = 1.0,
+            )
+        }
     }
 
     private fun add5GRadioUnit(parentNodeId: Int, latency: Double) = simulation.apply {
-        fogDevice(
-            FogDevices.FiveGRadioUnit,
-            level = FogDeviceLevel.Gateway,
+        addFogDevice(
+            FiveGRadioUnit,
+            level = Gateway,
             parentId = parentNodeId,
-            mips = 2500,
+            mips = 4000,
             ram = 2500,
             uplinkLatency = latency,
             busyPower = 107.339,
             idlePower = 83.4333,
-            microservicesFogDeviceType = if (config.microserviceController) FCN else null
+            microservicesFogDeviceType = if (config.microserviceController) FCN else null,
+            broadcastResults = config.microserviceController
         ).let {
             for (i in 0 until config.numberOfVehiclesPerRU) {
                 addVehicle(it.id)
@@ -160,9 +191,9 @@ class SimpleRoadWeatherExample {
     }
 
     private fun addProxyServer(cloudId: Int) = simulation.apply {
-        fogDevice(
-            FogDevices.ProxyServer,
-            level = FogDeviceLevel.Proxy,
+        addFogDevice(
+            ProxyServer,
+            level = Proxy,
             parentId = cloudId,
             mips = 5000,
             ram = 5000,
@@ -178,8 +209,8 @@ class SimpleRoadWeatherExample {
     }
 
     private fun initializeFogDevices() = simulation.apply {
-        val cloud = fogDevice(
-            FogDevices.cloud,
+        val cloud = addFogDevice(
+            cloud,
             level = FogDeviceLevel.Cloud,
             mips = 44_800,
             ram = 40_000,

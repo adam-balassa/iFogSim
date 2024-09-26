@@ -30,7 +30,10 @@ const props = defineProps<{
   fogDevices: ExperimentDetails['setup']['fogDevices']
 }>()
 
-const fogDeviceProperties = computed(() => transposeConfigs(props.fogDevices, 'level'))
+const groupBy = computed(() => props.fogDevices[0].type != null ? 'type' : 'level')
 
-const columns = computed(() => props.fogDevices.map(device => device.level))
+const fogDeviceProperties = computed(() => transposeConfigs(props.fogDevices, groupBy.value)
+)
+
+const columns = computed(() => props.fogDevices.map(device => device[groupBy.value]))
 </script>

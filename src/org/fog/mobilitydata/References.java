@@ -10,8 +10,8 @@ public class References {
 	public static final int RANDOM_MOBILITY = 2;
 
 	// Reference geographical information to create random mobility pattern for mobile users
-	public static final double lat_reference = -37.81349283433532;
-	public static final double long_reference = 144.952370512958;
+	public static double lat_reference = -37.81349283433532;
+	public static double long_reference = 144.952370512958;
 
 	// Reference dataset filename to store and retrieve users positions
 	// ".\\dataset\\usersLocation-melbCBD_"

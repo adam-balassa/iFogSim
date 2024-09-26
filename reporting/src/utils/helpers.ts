@@ -1,4 +1,16 @@
-import { Config } from "../types/types";
+import { AggregateExperimentResults, Config, ExperimentResults } from "@/types/types";
+import { ref, Ref, watch } from "vue";
+import { isEqual } from "lodash";
+
+export function useComputedRef<T, R>(source: Ref<R>, getter: (r: R) => T) {
+  const computedRef = ref<T>(getter(source.value))
+  watch(source, (nextValue, prevValue) => {
+    if (!isEqual(nextValue, prevValue)){
+      computedRef.value = ref(getter(nextValue)).value
+    }
+  })
+  return computedRef
+}
 
 export function transposeConfigs<T extends Config>(configs: T[], columnName?: keyof T): (Config & { metric: string })[] {
   return Object.entries(configs[0])
@@ -11,11 +23,14 @@ export function transposeConfigs<T extends Config>(configs: T[], columnName?: ke
       }))
 }
 
-export function CDF(data: number[]): { x: number, y: number }[] {
-  const acc: { x: number, y: number }[] = []
-  data.sort((a, b) => a - b).reduce<number>((currentCount, nextValue) => {
-    acc.push({ x: nextValue, y: (currentCount + 1) })
-    return currentCount + 1;
-  }, 0)
-  return acc
+type TemporalExecutionLevels = { [tupleType: string]: [string, number][] }
+export function areTemporalExecutionLevels(executionLevels: AggregateExperimentResults['executionLevels']): executionLevels is TemporalExecutionLevels {
+  if (executionLevels == null || !Object.values(executionLevels)[0]) return false
+  return Object.values(executionLevels)[0].every(measurement => Array.isArray(measurement))
+}
+
+type ExecutionLevels = { [tupleType: string]: string[] }
+export function areSimpleExecutionLevels(executionLevels: AggregateExperimentResults['executionLevels']): executionLevels is ExecutionLevels {
+  if (executionLevels == null || !Object.values(executionLevels)[0]) return false
+  return Object.values(executionLevels)[0].every(measurement => !Array.isArray(measurement))
 }

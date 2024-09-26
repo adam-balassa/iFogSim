@@ -15,6 +15,9 @@ sourceSets {
         java {
             setSrcDirs(listOf("src"))
         }
+        kotlin {
+            setSrcDirs(listOf("src"))
+        }
     }
 }
 

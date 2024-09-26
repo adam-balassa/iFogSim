@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1"
+     width="50"
+     height="50"
+     viewBox="-13 -5 44 44">
+    <defs/>
+    <g>
+        <circle cx="9" cy="17" r="21" fill="white" stroke="currentColor"/>
+        <path d="M 1.99 31.45 L 9 5.64 L 16.01 31.45" fill="none" stroke="currentColor" stroke-width="0.63"
+                pointer-events="all"/>
+        <path d="M 15.69 29.73 L 3.9 24.57 L 13.14 21.13 L 5.97 17.68 L 11.23 14.4 L 7.57 11.43" fill="none"
+              stroke="currentColor" stroke-width="0.63" stroke-linejoin="round" stroke-miterlimit="10" pointer-events="all"/>
+        <rect x="0.5" y="0.54" width="0" height="0" fill="none" stroke="currentColor" stroke-width="0.63"
+              pointer-events="all"/>
+        <ellipse cx="9" cy="6.27" rx="1.274840644919385" ry="1.251417004048583" fill="currentColor" stroke="currentColor"
+                 stroke-width="0.63" pointer-events="all"/>
+        <path d="M 11.17 4.14 L 11.61 3.61 C 13.07 5.07 13.07 7.4 11.61 8.86 L 11.17 8.36 C 12.28 7.17 12.28 5.33 11.17 4.14 Z M 12.76 2.57 L 13.21 2.14 C 15.47 4.44 15.47 8.09 13.21 10.39 L 12.76 9.96 C 14.78 7.9 14.78 4.63 12.76 2.57 Z M 14.35 1.01 L 14.8 0.54 C 16.51 1.97 17.5 4.06 17.5 6.27 C 17.5 8.47 16.51 10.56 14.8 11.99 L 14.35 11.52 C 15.98 10.24 16.93 8.31 16.93 6.27 C 16.93 4.22 15.98 2.29 14.35 1.01 Z M 6.83 4.14 L 6.39 3.61 C 4.93 5.07 4.93 7.4 6.39 8.86 L 6.83 8.36 C 5.72 7.17 5.72 5.33 6.83 4.14 Z M 5.24 2.57 L 4.79 2.14 C 2.53 4.44 2.53 8.09 4.79 10.39 L 5.24 9.96 C 3.22 7.9 3.22 4.63 5.24 2.57 Z M 3.65 1.01 L 3.2 0.54 C 1.49 1.97 0.5 4.06 0.5 6.27 C 0.5 8.47 1.49 10.56 3.2 11.99 L 3.65 11.52 C 2.02 10.24 1.07 8.31 1.07 6.27 C 1.07 4.22 2.02 2.29 3.65 1.01 Z"
+              fill="currentColor" stroke="currentColor" stroke-width="0.63" stroke-miterlimit="10" pointer-events="all"/>
+    </g>
+</svg>

@@ -3,6 +3,7 @@ package org.fog.entities;
 import org.fog.application.Application;
 import org.fog.placement.MicroservicePlacementLogic;
 import org.fog.placement.PlacementLogicOutput;
+import org.fog.utils.Logger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -90,7 +91,7 @@ public class ControllerComponent {
 
     public void addServiceDiscoveryInfo(String microserviceName, Integer deviceID) {
         this.serviceDiscoveryInfo.addServiceDIscoveryInfo(microserviceName, deviceID);
-        System.out.println("Service Discovery Info ADDED (device:" + this.deviceId + ") for microservice :" + microserviceName + " , destDevice : " + deviceID);
+        Logger.debug("Service Discovery Info ADDED", "(device:" + this.deviceId + ") for microservice :" + microserviceName + " , destDevice : " + deviceID);
     }
 
     public int getDestinationDeviceId(String destModuleName) {
@@ -163,7 +164,7 @@ class ServiceDiscovery {
 
     public void removeServiceDIscoveryInfo(String microserviceName, Integer deviceID) {
         if (serviceDiscoveryInfo.containsKey(microserviceName) && serviceDiscoveryInfo.get(microserviceName).contains(new Integer(deviceID))) {
-            System.out.println("Service Discovery Info REMOVED (device:" + this.deviceId + ") for microservice :" + microserviceName + " , destDevice : " + deviceID);
+            Logger.debug("Service Discovery Info REMOVED", "(device:" + this.deviceId + ") for microservice :" + microserviceName + " , destDevice : " + deviceID);
             serviceDiscoveryInfo.get(microserviceName).remove(new Integer(deviceID));
             if (serviceDiscoveryInfo.get(microserviceName).size() == 0)
                 serviceDiscoveryInfo.remove(microserviceName);

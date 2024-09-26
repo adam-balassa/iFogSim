@@ -1,22 +1,27 @@
 <template>
-  <Tree
-    class="tree-navigation"
-    selection-mode="single"
-    :value="experimentNodes"
-    v-model:selection-keys="selectedKeys"
-    v-model:expanded-keys="expandedKeys"
-    :filter="true"
-    filterMode="lenient"
-    @node-select="onSelectExperiment"
-  />
+  <div class="overflow-y-auto max-h-screen">
+    <Tree
+      class="tree-navigation"
+      selection-mode="multiple"
+      meta-key-selection
+      :value="experimentNodes"
+      v-model:selection-keys="selectedKeys"
+      @update:selection-keys="onSelect"
+      v-model:expanded-keys="expandedKeys"
+      :filter="true"
+      filterMode="lenient"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
 import Tree, { TreeExpandedKeys, TreeNode, TreeSelectionKeys } from 'primevue/tree';
 import useListExperiments from "./use-list-experiments";
 import { computed, ref, watch } from "vue";
-import useSelectedExperiment from "../use-selected-experiment";
-import { last } from "lodash";
+import useSelectedExperiment, { experimentId, idToExperiment } from "../use-selected-experiment";
+import _ from "lodash";
+import { ExperimentListing } from "@/types/types";
+import { confidenceInterval } from "@/utils/stats";
 
 const { experiments } = useListExperiments()
 const { selectedExperiment, selectExperiment } = useSelectedExperiment()
@@ -29,7 +34,7 @@ const experimentNodes = computed<TreeNode[] | undefined>(() => experiments.value
   icon: 'pi pi-fw pi-box',
   selectable: false,
   children: app.experiments.map(experiment => ({
-    key: experiment,
+    key: experimentId({ app: app.app, experiment }),
     label: experiment,
     type: app.app,
     icon: 'pi pi-fw pi-file',
@@ -40,27 +45,32 @@ const experimentNodes = computed<TreeNode[] | undefined>(() => experiments.value
 
 watch(experiments, nextExperiments => {
   if (nextExperiments?.length && nextExperiments[0].experiments.length && !selectedExperiment.value) {
-    select(last(nextExperiments)!.app, last(last(nextExperiments)!.experiments)!)
-  }
-  if (nextExperiments) {
-    const expandAll: TreeExpandedKeys = {};
-    nextExperiments.forEach(experiment => {
-      expandAll[experiment.app] = true
-    })
-    expandedKeys.value = expandAll;
+    const experiment = defaultExperiment(nextExperiments)
+    select(experiment)
+    expandedKeys.value = { [experiment.app]: true }
   }
 })
 
-function select(app: string, experiment: string) {
-  selectedKeys.value = { [experiment]: true }
-  selectExperiment(app, experiment)
+function defaultExperiment(listing: ExperimentListing) {
+  return _(listing)
+      .flatMap(app => app.experiments.map(experiment => ({ app: app.app, experiment })))
+      .sortBy(({ experiment }) => experiment )
+      .last()!!
 }
 
-function onSelectExperiment(node: TreeNode) {
-  if (node.type && node.key) {
-    selectExperiment(node.type, node.key)
-  }
+function select(id: { app: string, experiment: string }) {
+  selectedKeys.value = { [experimentId(id)]: true }
+  selectExperiment([id], true)
 }
+
+function onSelect(experimentIds: TreeSelectionKeys) {
+  const experiments = Object.entries(experimentIds)
+    .filter(([_, isSelected]) => isSelected)
+    .map(([id]) => id)
+    .map(idToExperiment)
+  selectExperiment(experiments, experiments.length === 1)
+}
+
 
 </script>
 

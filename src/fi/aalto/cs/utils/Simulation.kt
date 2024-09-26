@@ -17,17 +17,14 @@ class Simulation<Config>(
     val name: String,
     val config: Config,
 ) {
-    val user: FogBroker
-    val environment: SimulationEnvironment
-    val app: Application
     val now: Calendar = Calendar.getInstance()
+
+    val network = Network()
+    val workload = mutableMapOf<String, Workload>()
 
     init {
         Log.disable()
         CloudSim.init(1, now, false)
-        user = FogBroker("broker")
-        environment = SimulationEnvironment()
-        app = createApplication(name, user.id)
     }
 
     fun run() {
@@ -37,16 +34,22 @@ class Simulation<Config>(
     }
 }
 
-class SimulationEnvironment {
-    val locator = LocationHandler(DataParser())
-    val fogDevices = mutableMapOf<String, MutableList<FogDevice>>()
+class Workload(val id: String, val name: String) {
+    val user: FogBroker = FogBroker("broker-$name$id")
+    val application: Application = createApplication("$name$id", user.id)
+
+    // Sensors and actuators are modeled as both physical devices and as parts of the application
+    // They added as part of the workload (instead of the network), since their instances are application specific
     val sensors = mutableListOf<Sensor>()
     val actuators = mutableListOf<Actuator>()
+}
+
+class Network {
+    val locator = LocationHandler(DataParser())
+    val fogDevices = mutableMapOf<String, MutableList<FogDevice>>()
 
     fun add(device: FogDevice) {
         fogDevices["generic"]?.add(device)
             ?: let { fogDevices["generic"] = mutableListOf(device) }
     }
-    fun add(actuator: Actuator) = actuators.add(actuator)
-    fun add(sensor: Sensor) = sensors.add(sensor)
 }

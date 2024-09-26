@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="flex flex-column align-items-center">
-      <h3 class="font-normal text-2xl">General configs</h3>
+      <h3 class="font-normal text-2xl">Factors</h3>
       <div class="w-fit">
         <DataTable
           :value="configData"

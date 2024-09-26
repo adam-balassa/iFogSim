@@ -175,7 +175,7 @@ public class ClusteringController extends SimEntity {
         for (int i = 0; i < Levels.size(); i++) {
             int clusterLevel = (int) Levels.get(i);
             for (FogDevice fogDevice : fogDevices) {
-                System.out.println(CloudSim.clock() + " fog Device: " + fogDevice.getName() + " with id: " + fogDevice.getId() + " is at level: " + fogDevice.getLevel());
+                Logger.debug("CLUSTERING", CloudSim.clock() + " fog Device: " + fogDevice.getName() + " with id: " + fogDevice.getId() + " is at level: " + fogDevice.getLevel());
                 if ((int) fogDevice.getLevel() == clusterLevel) {
                     JSONObject jsonMessage = new JSONObject();
                     jsonMessage.put("locationsInfo", getLocator());

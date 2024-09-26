@@ -1,5 +1,8 @@
 package org.fog.entities;
 
+import fi.aalto.cs.extensions.BandwidthMonitor;
+import fi.aalto.cs.extensions.ExecutionLevelMonitor;
+import fi.aalto.cs.extensions.TupleExecutionTimeMonitor;
 import org.apache.commons.math3.util.Pair;
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
@@ -19,6 +22,7 @@ import org.fog.mobilitydata.Clustering;
 import org.fog.policy.AppModuleAllocationPolicy;
 import org.fog.scheduler.StreamOperatorScheduler;
 import org.fog.utils.*;
+import org.jetbrains.annotations.Nullable;
 import org.json.simple.JSONObject;
 
 import java.util.*;
@@ -309,7 +313,7 @@ public class FogDevice extends PowerDatacenter {
         // TODO Auto-generated method stub
         JSONObject object = (JSONObject) ev.getData();
         AppModule appModule = (AppModule) object.get("module");
-        System.out.println(getName() + " is sending " + appModule.getName());
+        Logger.debug("SEND MODULE", getName() + " is sending " + appModule.getName());
         NetworkUsageMonitor.sendingModule((double) object.get("delay"), appModule.getSize());
         MigrationDelayMonitor.setMigrationDelay((double) object.get("delay"));
 
@@ -324,7 +328,7 @@ public class FogDevice extends PowerDatacenter {
         JSONObject object = (JSONObject) ev.getData();
         AppModule appModule = (AppModule) object.get("module");
         Application app = (Application) object.get("application");
-        System.out.println(getName() + " is receiving " + appModule.getName());
+        Logger.debug("SEND RECEIVE", getName() + " is receiving " + appModule.getName());
         NetworkUsageMonitor.sendingModule((double) object.get("delay"), appModule.getSize());
         MigrationDelayMonitor.setMigrationDelay((double) object.get("delay"));
 
@@ -512,6 +516,7 @@ public class FogDevice extends PowerDatacenter {
                         cloudletCompleted = true;
                         Tuple tuple = (Tuple) cl;
                         TimeKeeper.getInstance().tupleEndedExecution(tuple);
+                        TupleExecutionTimeMonitor.INSTANCE.executionEnd(tuple);
                         Application application = getApplicationMap().get(tuple.getAppId());
                         Logger.debug(getName(), "Completed execution of tuple " + tuple.getCloudletId() + "on " + tuple.getDestModuleName());
                         List<Tuple> resultantTuples = application.getResultantTuples(tuple.getDestModuleName(), tuple, getId(), vm.getId());
@@ -683,7 +688,7 @@ public class FogDevice extends PowerDatacenter {
 		/*if(getName().equals("d-0") && tuple.getTupleType().equals("_SENSOR")){
 			System.out.println(++numClients);
 		}*/
-        Logger.debug(getName(), "Received tuple " + tuple.getCloudletId() + "with tupleType = " + tuple.getTupleType() + "\t| Source : " +
+        Logger.debug(getName(), "Received tuple " + tuple.getCloudletId() + " with tupleType = " + tuple.getTupleType() + "\t| Source : " +
                 CloudSim.getEntityName(ev.getSource()) + "|Dest : " + CloudSim.getEntityName(ev.getDestination()));
 		
 		/*if(CloudSim.getEntityName(ev.getSource()).equals("drone_0")||CloudSim.getEntityName(ev.getDestination()).equals("drone_0"))
@@ -721,16 +726,8 @@ public class FogDevice extends PowerDatacenter {
 
         if (appToModulesMap.containsKey(tuple.getAppId())) {
             if (appToModulesMap.get(tuple.getAppId()).contains(tuple.getDestModuleName())) {
-                int vmId = -1;
-                for (Vm vm : getHost().getVmList()) {
-                    if (((AppModule) vm).getName().equals(tuple.getDestModuleName()))
-                        vmId = vm.getId();
-                }
-                if (vmId < 0
-                        || (tuple.getModuleCopyMap().containsKey(tuple.getDestModuleName()) &&
-                        tuple.getModuleCopyMap().get(tuple.getDestModuleName()) != vmId)) {
-                    return;
-                }
+                Integer vmId = getVmForTuple(tuple);
+                if (vmId == null) return;
                 tuple.setVmId(vmId);
                 //Logger.error(getName(), "Executing tuple for operator " + moduleName);
 
@@ -755,6 +752,21 @@ public class FogDevice extends PowerDatacenter {
                     sendDown(tuple, childId);
             }
         }
+    }
+
+    @Nullable
+    protected Integer getVmForTuple(Tuple tuple) {
+        int vmId = -1;
+        for (Vm vm : getHost().getVmList()) {
+            if (((AppModule) vm).getName().equals(tuple.getDestModuleName()))
+                vmId = vm.getId();
+        }
+        if (vmId < 0
+                || (tuple.getModuleCopyMap().containsKey(tuple.getDestModuleName()) &&
+                tuple.getModuleCopyMap().get(tuple.getDestModuleName()) != vmId)) {
+            return null;
+        }
+        return vmId;
     }
 
     protected void updateTimingsOnReceipt(Tuple tuple) {
@@ -788,8 +800,9 @@ public class FogDevice extends PowerDatacenter {
     }
 
     protected void executeTuple(SimEvent ev, String moduleName) {
-        Logger.debug(getName(), "Executing tuple on module " + moduleName);
         Tuple tuple = (Tuple) ev.getData();
+        Logger.debug(getName(), "Executing tuple " + tuple.getCloudletId() + " on module " + moduleName);
+        ExecutionLevelMonitor.INSTANCE.registerTupleExecution(tuple.getTupleType(), getLevel());
 
         AppModule module = getModuleByName(moduleName);
 
@@ -808,6 +821,7 @@ public class FogDevice extends PowerDatacenter {
         }
 
         TimeKeeper.getInstance().tupleStartedExecution(tuple);
+        TupleExecutionTimeMonitor.INSTANCE.executionStart(tuple, this);
         updateAllocatedMips(moduleName);
         processCloudletSubmit(ev, false);
         updateAllocatedMips(moduleName);
@@ -868,6 +882,7 @@ public class FogDevice extends PowerDatacenter {
         send(getId(), networkDelay, FogEvents.UPDATE_NORTH_TUPLE_QUEUE);
         send(parentId, networkDelay + getUplinkLatency(), FogEvents.TUPLE_ARRIVAL, tuple);
         NetworkUsageMonitor.sendingTuple(getUplinkLatency(), tuple.getCloudletFileSize());
+        BandwidthMonitor.INSTANCE.send(tuple, this, true, networkDelay);
     }
 
     protected void sendUp(Tuple tuple) {
@@ -876,6 +891,7 @@ public class FogDevice extends PowerDatacenter {
                 sendUpFreeLink(tuple);
             } else {
                 northTupleQueue.add(tuple);
+                BandwidthMonitor.INSTANCE.startWait(tuple, this, true);
             }
         }
     }
@@ -899,6 +915,7 @@ public class FogDevice extends PowerDatacenter {
         send(getId(), networkDelay, FogEvents.UPDATE_SOUTH_TUPLE_QUEUE);
         send(childId, networkDelay + latency, FogEvents.TUPLE_ARRIVAL, tuple);
         NetworkUsageMonitor.sendingTuple(latency, tuple.getCloudletFileSize());
+        BandwidthMonitor.INSTANCE.send(tuple, this, false, networkDelay);
     }
 
     protected void sendDown(Tuple tuple, int childId) {
@@ -907,6 +924,7 @@ public class FogDevice extends PowerDatacenter {
                 sendDownFreeLink(tuple, childId);
             } else {
                 southTupleQueue.add(new Pair<Tuple, Integer>(tuple, childId));
+                BandwidthMonitor.INSTANCE.startWait(tuple, this, false);
             }
         }
     }
